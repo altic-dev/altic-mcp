@@ -1,17 +1,17 @@
-from decimal import DefaultContext
 from fastmcp import FastMCP
-from tools import (
-    messages,
-    contacts,
-    app,
-    reminders,
-    notes,
-    system,
-    calendar,
-    safari,
-    display,
-)
 from pydantic import Field
+
+from .tools import (
+    app,
+    calendar,
+    contacts,
+    display,
+    messages,
+    notes,
+    reminders,
+    safari,
+    system,
+)
 
 mcp = FastMCP("Altic-MCP")
 
