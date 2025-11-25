@@ -1,6 +1,6 @@
 from decimal import DefaultContext
 from fastmcp import FastMCP
-from tools import (
+from .tools import (
     messages,
     contacts,
     app,
