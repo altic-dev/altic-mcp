@@ -12,3 +12,6 @@ dependencies = [
     "fastmcp>=2.13.0.1",
     "rapidfuzz>=3.14.1",
 ]
+
+[project.scripts]
+altic-mcp = "altic_mcp.__main__:main"
