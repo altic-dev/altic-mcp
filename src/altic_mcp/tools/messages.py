@@ -1,5 +1,4 @@
 import subprocess
-from typing import List
 from .constants import SCRIPTS_PREFIX
 
 
