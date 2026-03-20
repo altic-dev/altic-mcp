@@ -21,12 +21,12 @@ It executes scripts with `osascript` via the Bash tool.
 Command templates:
 
 ```bash
-osascript "skills/altic_studio/scripts/<script>.applescript" [arg1] [arg2] ...
+osascript "skills/altic-studio/scripts/<script>.applescript" [arg1] [arg2] ...
 ```
 
 ## Capabilities
 
-The full Altic automation surface is exposed as scripts under `skills/altic_studio/scripts`:
+The full Altic automation surface is exposed as scripts under `skills/altic-studio/scripts`:
 
 - `open-application.applescript` - args: `<app_name>`
 - `send-message.applescript` - args: `<phone_or_handle> <message>`
@@ -53,6 +53,7 @@ The full Altic automation surface is exposed as scripts under `skills/altic_stud
 - `increase-brightness.applescript` - args: `[amount_0_to_1]`
 - `turn-up-volume.applescript` - args: `[amount_0_to_100]`
 - `turn-down-volume.applescript` - args: `[amount_0_to_100]`
+- `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
 
 ## Operational Rules
 
@@ -67,5 +68,6 @@ The full Altic automation surface is exposed as scripts under `skills/altic_stud
 - Reminders access
 - Automation permission for app control
 - Accessibility permission for some system controls
+- Screen Recording permission for screenshots
 - Safari setting: Allow JavaScript from Apple Events
 - Full Disk Access for reading Messages database
