@@ -9,6 +9,37 @@
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🖥️ **System** - Open apps, adjust brightness/volume, visual effects
 
+## Available Skills
+
+This repo currently includes one shareable skill:
+
+- `altic-studio` (`skills/altic-studio/`)
+  - Runs local AppleScript automations via `osascript` through the Bash tool
+  - Covers Messages, Contacts, Notes, Reminders, Calendar, Safari, system controls, and screenshots
+  - Main skill manifest: `skills/altic-studio/SKILL.md`
+
+### Key Scripts In `altic-studio`
+
+- Messaging: `send-message.applescript`, `read-recent-messages.applescript`
+- Contacts: `fetch-all-contacts.applescript`
+- Notes/Reminders: `create-note.applescript`, `search-for-note.applescript`, `set-reminder.applescript`
+- Calendar: `create-calendar-event.applescript`, `list-all-calendar-events-for-day.applescript`
+- Safari: open/close/switch/navigate/reload/history/page-info scripts
+- System: `open-application.applescript`, brightness + volume scripts
+- Screenshot: `capture-screenshot.applescript`
+
+## Skill Setup (OpenCode)
+
+To make `altic-studio` available in OpenCode, symlink it into your OpenCode skills directory:
+
+```bash
+mkdir -p "$HOME/.config/opencode/skills"
+ln -sfn "/Users/rohith/Documents/altic-mcp/skills/altic-studio" "$HOME/.config/opencode/skills/altic-studio"
+ls "$HOME/.config/opencode/skills"
+```
+
+Then restart OpenCode (new session).
+
 ## Requirements
 
 - macOS 10.13+
