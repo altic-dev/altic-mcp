@@ -1,7 +1,5 @@
 # Altic MCP
 
-An MCP server that gives Claude hands-on control of your Mac, what Siri should've been 
-
 ## Features
 
 20+ tools for macOS automation:
@@ -41,7 +39,7 @@ uv run server.py
   "mcpServers": {
     "altic-mcp": {
       "command": "uv",
-      "args": ["run", "/FULL/PATH/TO/altic-mcp/server.py"]
+      "args": ["run", "--project", "/FULL/PATH/TO/altic-mcp", "/FULL/PATH/TO/altic-mcp/server.py"]
     }
   }
 }
