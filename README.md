@@ -28,7 +28,22 @@ This repo currently includes one shareable skill:
 - System: `open-application.applescript`, brightness + volume scripts
 - Screenshot: `capture-screenshot.applescript`
 
-## Skill Setup (OpenCode)
+## Skill Setup (Any Agent)
+
+Install `altic-studio` directly from this repo with the Skills CLI:
+
+```bash
+# Preview available skills in this repo
+npx skills add altic-dev/altic-mcp --list
+
+# Install skill with interactive mode 
+npx skills add altic-dev/altic-mcp 
+
+```
+
+Restart your coding agent after installation.
+
+### Manual Symlink Setup For OpenCode (Alternative)
 
 To make `altic-studio` available in OpenCode, symlink it into your OpenCode skills directory:
 
@@ -37,8 +52,6 @@ mkdir -p "$HOME/.config/opencode/skills"
 ln -sfn "/Users/rohith/Documents/altic-mcp/skills/altic-studio" "$HOME/.config/opencode/skills/altic-studio"
 ls "$HOME/.config/opencode/skills"
 ```
-
-Then restart OpenCode (new session).
 
 ## Requirements
 
