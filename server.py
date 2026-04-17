@@ -6,6 +6,7 @@ from pydantic import Field
 from tools import (
     app,
     calendar,
+    chrome,
     contacts,
     display,
     messages,
@@ -382,6 +383,165 @@ async def get_safari_page_info() -> str:
         Page information including URL, title, text, and source or error message
     """
     return safari.get_safari_page_info()
+
+
+@mcp.tool()
+async def chrome_open_session(
+    start_url: str = Field(default="about:blank"),
+    debug_port: int = Field(default=9222, ge=1024, le=65535),
+    headless: bool = Field(default=False),
+) -> str:
+    """
+    Open a Chrome automation session for browser control.
+
+    Args:
+        start_url: Initial page URL to open
+        debug_port: Chrome remote debugging port for CDP sessions
+        headless: Launch Chrome headless if debugger needs to be started
+
+    Returns:
+        Session identifier and connection details or error message
+    """
+    return chrome.chrome_open_session(start_url, debug_port, headless)
+
+
+@mcp.tool()
+async def chrome_list_sessions() -> str:
+    """
+    List active Chrome automation sessions.
+
+    Returns:
+        A list of active session IDs
+    """
+    return chrome.chrome_list_sessions()
+
+
+@mcp.tool()
+async def chrome_navigate(session_id: str, url: str) -> str:
+    """
+    Navigate an active Chrome CDP session to a URL.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+        url: URL to load
+
+    Returns:
+        Success or error message
+    """
+    return chrome.chrome_navigate(session_id, url)
+
+
+@mcp.tool()
+async def chrome_wait_for(
+    session_id: str,
+    selector: str,
+    timeout_ms: int = Field(default=10000, ge=100, le=120000),
+    poll_ms: int = Field(default=200, ge=50, le=5000),
+) -> str:
+    """
+    Wait for a CSS selector to exist and be visible in the page.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+        selector: CSS selector to wait for
+        timeout_ms: Max wait time in milliseconds
+        poll_ms: Poll interval in milliseconds
+
+    Returns:
+        Success or timeout/error message
+    """
+    return chrome.chrome_wait_for(session_id, selector, timeout_ms, poll_ms)
+
+
+@mcp.tool()
+async def chrome_click(session_id: str, selector: str) -> str:
+    """
+    Click an element in an active Chrome CDP session using a CSS selector.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+        selector: CSS selector for target element
+
+    Returns:
+        Success or error message
+    """
+    return chrome.chrome_click(session_id, selector)
+
+
+@mcp.tool()
+async def chrome_type(
+    session_id: str,
+    selector: str,
+    text: str,
+    clear_first: bool = Field(default=True),
+) -> str:
+    """
+    Type text into an input element in an active Chrome CDP session.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+        selector: CSS selector for input element
+        text: Text to type
+        clear_first: Clear existing value before typing
+
+    Returns:
+        Success or error message
+    """
+    return chrome.chrome_type(session_id, selector, text, clear_first)
+
+
+@mcp.tool()
+async def chrome_extract(
+    session_id: str,
+    selector: str = Field(default=""),
+    attribute: str = Field(default=""),
+    javascript_expression: str = Field(default=""),
+) -> str:
+    """
+    Extract data from a page by selector or by JavaScript expression.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+        selector: CSS selector to query
+        attribute: Attribute name to read from selected element
+        javascript_expression: JavaScript expression to evaluate directly
+
+    Returns:
+        Extracted value as JSON or error message
+    """
+    return chrome.chrome_extract(session_id, selector, attribute, javascript_expression)
+
+
+@mcp.tool()
+async def chrome_screenshot(
+    session_id: str,
+    output_path: str = Field(default=""),
+) -> str:
+    """
+    Capture a screenshot of the active page in a Chrome CDP session.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+        output_path: Optional file path for output PNG
+
+    Returns:
+        Saved path or error message
+    """
+    return chrome.chrome_screenshot(session_id, output_path)
+
+
+@mcp.tool()
+async def chrome_close_session(session_id: str) -> str:
+    """
+    Close a Chrome automation session.
+
+    Args:
+        session_id: Session returned by chrome_open_session
+
+    Returns:
+        Success or error message
+    """
+    return chrome.chrome_close_session(session_id)
 
 
 @mcp.tool()

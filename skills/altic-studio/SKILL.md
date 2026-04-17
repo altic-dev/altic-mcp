@@ -1,17 +1,17 @@
 ---
 name: altic-studio
-description: macOS automation skill that runs local AppleScript files through osascript using the Bash tool.
+description: macOS automation skill for AppleScript actions and Chrome browser control via MCP CDP tools.
 license: Apache-2.0
 ---
 
 # Altic Studio
 
-`altic-studio` runs macOS automations by executing local scripts directly.
+`altic-studio` provides two automation modes:
 
-This skill does not rely on MCP tool bindings at runtime.
-It executes scripts with `osascript` via the Bash tool.
+1. AppleScript mode for macOS apps and system actions
+2. MCP CDP mode for Google Chrome browser control
 
-## Required Execution Mode
+## Mode A: AppleScript (macOS apps)
 
 - Always execute AppleScript through Bash with `osascript`.
 - Always run from workspace root as the working directory.
@@ -24,7 +24,7 @@ Command templates:
 osascript "skills/altic-studio/scripts/<script>.applescript" [arg1] [arg2] ...
 ```
 
-## Capabilities
+### AppleScript Capabilities
 
 The full Altic automation surface is exposed as scripts under `skills/altic-studio/scripts`:
 
@@ -55,11 +55,36 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - `turn-down-volume.applescript` - args: `[amount_0_to_100]`
 - `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
 
+## Mode B: Chrome Browser Control (MCP CDP)
+
+Use MCP tools for deterministic Chrome automation:
+
+- `chrome_open_session`
+- `chrome_navigate`
+- `chrome_wait_for`
+- `chrome_click`
+- `chrome_type`
+- `chrome_extract`
+- `chrome_screenshot`
+- `chrome_close_session`
+- `chrome_list_sessions`
+
+Execution pattern:
+
+1. Open a Chrome session.
+2. Navigate and wait for stable selectors.
+3. Interact with click and type actions.
+4. Verify state with extraction.
+5. Capture screenshots on checkpoints or failures.
+6. Close session.
+
 ## Operational Rules
 
 - Validate date/time format before running reminder/calendar scripts.
 - If contact lookup returns multiple options, ask for disambiguation before sending.
 - If script output indicates permission issues, report exact permissions to enable.
+- Prefer explicit CSS selectors and call `chrome_wait_for` before click/type on dynamic pages.
+- After mutating actions in Chrome, verify expected page state with `chrome_extract`.
 
 ## Permissions Checklist
 
@@ -70,4 +95,5 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - Accessibility permission for some system controls
 - Screen Recording permission for screenshots
 - Safari setting: Allow JavaScript from Apple Events
+- Google Chrome installed for CDP tools
 - Full Disk Access for reading Messages database

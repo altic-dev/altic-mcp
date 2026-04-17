@@ -7,4 +7,5 @@ requires-python = ">=3.13"
 dependencies = [
     "fastmcp>=2.13.0.1",
     "rapidfuzz>=3.14.1",
+    "websocket-client>=1.8.0",
 ]

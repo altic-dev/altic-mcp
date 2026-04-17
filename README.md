@@ -7,6 +7,7 @@
 - 📝 **Notes & Reminders** - Create and search notes, set reminders  
 - 📅 **Calendar** - Create and view events
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
+- 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
 - 🖥️ **System** - Open apps, adjust brightness/volume, visual effects
 
 ## Available Skills
@@ -15,7 +16,7 @@ This repo currently includes one shareable skill:
 
 - `altic-studio` (`skills/altic-studio/`)
   - Runs local AppleScript automations via `osascript` through the Bash tool
-  - Covers Messages, Contacts, Notes, Reminders, Calendar, Safari, system controls, and screenshots
+  - Covers Messages, Contacts, Notes, Reminders, Calendar, Safari, system controls, screenshots, and Chrome CDP browser control
   - Main skill manifest: `skills/altic-studio/SKILL.md`
 
 ### Key Scripts In `altic-studio`
@@ -109,5 +110,15 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 Safari → Develop → **Allow JavaScript from Apple Events** ✅ (Required for Safari tools)
 
 *Note: If "Develop" menu is not visible, enable it in Safari → Settings → Advanced → Show Develop menu*
+
+### Chrome Setup (for CDP tools):
+
+- Install Google Chrome
+- The MCP server can auto-start Chrome with `--remote-debugging-port` when opening a CDP session
+- If auto-start fails, launch manually:
+
+```bash
+open -a "Google Chrome" --args --remote-debugging-port=9222
+```
 
 macOS will prompt for permissions when first used. Grant them to enable full functionality.
