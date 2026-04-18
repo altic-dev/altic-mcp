@@ -17,4 +17,5 @@ osascript "skills/altic-studio/scripts/create-note.applescript" "Todo" "Buy milk
 osascript "skills/altic-studio/scripts/create-calendar-event.applescript" "Team Sync" "2026-03-20 10:00" "30" "Work"
 osascript "skills/altic-studio/scripts/navigate-safari.applescript" "https://example.com"
 osascript "skills/altic-studio/scripts/capture-screenshot.applescript" "/tmp/screen.png" "full"
+swift "skills/altic-studio/scripts/capture-active-screen.swift" "/tmp/active-screen.png"
 ```

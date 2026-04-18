@@ -11,6 +11,8 @@ license: Apache-2.0
 1. AppleScript mode for macOS apps and system actions
 2. MCP CDP mode for Google Chrome browser control
 
+It also includes a Swift utility script for active-display screenshots on macOS.
+
 ## Mode A: AppleScript (macOS apps)
 
 - Always execute AppleScript through Bash with `osascript`.
@@ -54,6 +56,13 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - `turn-up-volume.applescript` - args: `[amount_0_to_100]`
 - `turn-down-volume.applescript` - args: `[amount_0_to_100]`
 - `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
+- `capture-active-screen.swift` - args: `<output_path>` (captures full display containing frontmost app)
+
+Swift command template (for active-display screenshots):
+
+```bash
+swift "skills/altic-studio/scripts/capture-active-screen.swift" "/tmp/active-screen.png"
+```
 
 ## Mode B: Chrome Browser Control (MCP CDP)
 
@@ -68,6 +77,7 @@ Use MCP tools for deterministic Chrome automation:
 - `chrome_screenshot`
 - `chrome_close_session`
 - `chrome_list_sessions`
+- `capture_active_screen`
 
 Execution pattern:
 

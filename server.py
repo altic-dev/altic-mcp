@@ -13,6 +13,7 @@ from tools import (
     notes,
     reminders,
     safari,
+    screenshot,
     system,
 )
 
@@ -542,6 +543,23 @@ async def chrome_close_session(session_id: str) -> str:
         Success or error message
     """
     return chrome.chrome_close_session(session_id)
+
+
+@mcp.tool()
+async def capture_active_screen(
+    output_path: str = Field(default=""),
+) -> str | list[object]:
+    """
+    Capture a full screenshot of the display containing the frontmost app and share
+    the image directly with the model.
+
+    Args:
+        output_path: Optional file path for output PNG
+
+    Returns:
+        A text status plus image content, or an error message
+    """
+    return screenshot.capture_active_screen(output_path)
 
 
 @mcp.tool()

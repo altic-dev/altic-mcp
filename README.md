@@ -8,6 +8,7 @@
 - 📅 **Calendar** - Create and view events
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
+- 📸 **Screen Capture** - Capture the active display and share image output with the model
 - 🖥️ **System** - Open apps, adjust brightness/volume, visual effects
 
 ## Available Skills
@@ -105,6 +106,7 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 - ✅ **Reminders** - For creating reminders
 - ✅ **Automation** - Allow Claude to control apps (Messages, Notes, Safari)
 - ✅ **Accessibility** - For screen glow and system controls
+- ✅ **Screen Recording** - Required for screenshot capture tools
 
 ### Safari Settings:
 Safari → Develop → **Allow JavaScript from Apple Events** ✅ (Required for Safari tools)
