@@ -2,10 +2,11 @@
 
 ## Features
 
-20+ tools for macOS automation:
+30+ tools for macOS automation:
 - 📱 **Messages & Contacts** - Send/read iMessages, search contacts
 - 📝 **Notes & Reminders** - Create and search notes, set reminders  
 - 📅 **Calendar** - Create and view events
+- 🗂️ **Files & Finder** - Find, inspect, copy, move, rename, reveal, and trash files safely
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
 - 📸 **Screen Capture** - Capture the active display and share image output with the model
@@ -29,6 +30,7 @@ This repo currently includes one shareable skill:
 - Safari: open/close/switch/navigate/reload/history/page-info scripts
 - System: `open-application.applescript`, brightness + volume scripts
 - Screenshot: `capture-screenshot.applescript`
+- Files/Finder MCP: `find_files`, `list_directory`, `get_file_info`, `copy_file`, `copy_directory`, `move_file`, `rename_file`, `trash_file`, `reveal_in_finder`, `get_finder_selection`
 
 ## Skill Setup (Any Agent)
 
@@ -105,6 +107,7 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 - ✅ **Calendars** - For calendar events
 - ✅ **Reminders** - For creating reminders
 - ✅ **Automation** - Allow Claude to control apps (Messages, Notes, Safari)
+- ✅ **Finder Automation** - For Finder selection, reveal, and Trash file tools
 - ✅ **Accessibility** - For screen glow and system controls
 - ✅ **Screen Recording** - Required for screenshot capture tools
 
@@ -124,3 +127,19 @@ open -a "Google Chrome" --args --remote-debugging-port=9222
 ```
 
 macOS will prompt for permissions when first used. Grant them to enable full functionality.
+
+## Manual Smoke Tests For File Tools
+
+Run these against temporary files before using the tools on important data:
+
+```bash
+mkdir -p /tmp/altic-file-smoke/source
+echo "hello" > /tmp/altic-file-smoke/source/example.txt
+```
+
+- Use `find_files` for `example` with root `/tmp/altic-file-smoke`
+- Use `copy_file` with `dry_run=true`, then repeat with `dry_run=false`
+- Use `rename_file` with `dry_run=true`, then repeat with `dry_run=false`
+- Use `reveal_in_finder` on the copied file
+- Select a file in Finder and call `get_finder_selection`
+- Use `trash_file` with `dry_run=true` before testing a real Trash move

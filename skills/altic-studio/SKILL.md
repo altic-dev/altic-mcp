@@ -10,6 +10,7 @@ license: Apache-2.0
 
 1. AppleScript mode for macOS apps and system actions
 2. MCP CDP mode for Google Chrome browser control
+3. MCP file mode for safe Finder and filesystem operations
 
 It also includes a Swift utility script for active-display screenshots on macOS.
 
@@ -88,6 +89,39 @@ Execution pattern:
 5. Capture screenshots on checkpoints or failures.
 6. Close session.
 
+## Mode C: File Finder and File Operations (MCP)
+
+Use MCP file tools instead of shell commands when the user asks to find, inspect,
+copy, move, rename, reveal, or trash files. These tools return JSON for
+successful lookups and operations, and `Error: ...` strings for failures.
+
+Available tools:
+
+- `find_files` - args: `<query> [root] [max_results] [include_hidden] [kind]`
+- `list_directory` - args: `<path> [include_hidden] [max_results]`
+- `get_file_info` - args: `<path>`
+- `copy_file` - args: `<source> <destination> [overwrite] [dry_run]`
+- `copy_directory` - args: `<source> <destination> [overwrite] [dry_run]`
+- `move_file` - args: `<source> <destination> [overwrite] [dry_run]`
+- `rename_file` - args: `<path> <new_name> [overwrite] [dry_run]`
+- `trash_file` - args: `<path> [dry_run]`
+- `reveal_in_finder` - args: `<path>`
+- `get_finder_selection` - args: none
+
+File workflow rules:
+
+- If the user refers to selected files, the current Finder window, or "this file",
+  call `get_finder_selection` first.
+- For ambiguous file names, call `find_files`, then `get_file_info`; ask for
+  disambiguation when multiple plausible matches remain.
+- Prefer `dry_run=true` before `copy_file`, `copy_directory`, `move_file`,
+  `rename_file`, or `trash_file` when the target or destination is ambiguous.
+- Do not overwrite unless the user explicitly asks for replacement; default
+  `overwrite=false`.
+- Use `trash_file`, not permanent deletion.
+- Use `reveal_in_finder` after file operations when the user wants to see the
+  result in Finder.
+
 ## Operational Rules
 
 - Validate date/time format before running reminder/calendar scripts.
@@ -95,6 +129,8 @@ Execution pattern:
 - If script output indicates permission issues, report exact permissions to enable.
 - Prefer explicit CSS selectors and call `chrome_wait_for` before click/type on dynamic pages.
 - After mutating actions in Chrome, verify expected page state with `chrome_extract`.
+- For file mutations, verify the target with `get_file_info` or `list_directory`
+  after the operation when the user needs confirmation.
 
 ## Permissions Checklist
 
@@ -107,3 +143,4 @@ Execution pattern:
 - Safari setting: Allow JavaScript from Apple Events
 - Google Chrome installed for CDP tools
 - Full Disk Access for reading Messages database
+- Automation permission for Finder when revealing, trashing, or reading selection

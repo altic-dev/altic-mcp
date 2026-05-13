@@ -9,3 +9,11 @@ dependencies = [
     "rapidfuzz>=3.14.1",
     "websocket-client>=1.8.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

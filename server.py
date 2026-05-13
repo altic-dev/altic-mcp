@@ -9,6 +9,7 @@ from tools import (
     chrome,
     contacts,
     display,
+    files,
     messages,
     notes,
     reminders,
@@ -34,6 +35,192 @@ def open_app(name: str) -> str:
         A success or failure message
     """
     return app.open_app(name)
+
+
+@mcp.tool()
+async def find_files(
+    query: str,
+    root: str = Field(default=""),
+    max_results: int = Field(default=25, ge=1, le=500),
+    include_hidden: bool = Field(default=False),
+    kind: str = Field(default="auto"),
+) -> str:
+    """
+    Find files by name using Spotlight first, with Python filesystem fallback.
+
+    Args:
+        query: File name or Spotlight query text
+        root: Optional directory to search within
+        max_results: Maximum number of results to return
+        include_hidden: Include hidden files and folders
+        kind: Search backend: auto, name, or spotlight
+
+    Returns:
+        JSON string with file metadata results or an error message
+    """
+    return files.find_files(query, root, max_results, include_hidden, kind)
+
+
+@mcp.tool()
+async def list_directory(
+    path: str,
+    include_hidden: bool = Field(default=False),
+    max_results: int = Field(default=200, ge=1, le=1000),
+) -> str:
+    """
+    List immediate children of a directory with metadata.
+
+    Args:
+        path: Directory path to list
+        include_hidden: Include hidden files and folders
+        max_results: Maximum number of children to return
+
+    Returns:
+        JSON string with directory entries or an error message
+    """
+    return files.list_directory(path, include_hidden, max_results)
+
+
+@mcp.tool()
+async def get_file_info(path: str) -> str:
+    """
+    Get metadata for a file, directory, or missing path.
+
+    Args:
+        path: File or directory path
+
+    Returns:
+        JSON string with path metadata or an error message
+    """
+    return files.get_file_info(path)
+
+
+@mcp.tool()
+async def copy_file(
+    source: str,
+    destination: str,
+    overwrite: bool = Field(default=False),
+    dry_run: bool = Field(default=False),
+) -> str:
+    """
+    Copy a file with metadata. Directories require copy_directory.
+
+    Args:
+        source: Existing source file path
+        destination: Destination file path
+        overwrite: Allow replacing an existing destination
+        dry_run: Return the planned action without copying
+
+    Returns:
+        JSON string with operation details or an error message
+    """
+    return files.copy_file(source, destination, overwrite, dry_run)
+
+
+@mcp.tool()
+async def copy_directory(
+    source: str,
+    destination: str,
+    overwrite: bool = Field(default=False),
+    dry_run: bool = Field(default=False),
+) -> str:
+    """
+    Copy a directory tree. Existing destinations fail unless overwrite is true.
+
+    Args:
+        source: Existing source directory path
+        destination: Destination directory path
+        overwrite: Allow merging into an existing destination
+        dry_run: Return the planned action without copying
+
+    Returns:
+        JSON string with operation details or an error message
+    """
+    return files.copy_directory(source, destination, overwrite, dry_run)
+
+
+@mcp.tool()
+async def move_file(
+    source: str,
+    destination: str,
+    overwrite: bool = Field(default=False),
+    dry_run: bool = Field(default=False),
+) -> str:
+    """
+    Move a file or directory. Existing destinations fail unless overwrite is true.
+
+    Args:
+        source: Existing source path
+        destination: Destination path
+        overwrite: Allow replacing an existing destination
+        dry_run: Return the planned action without moving
+
+    Returns:
+        JSON string with operation details or an error message
+    """
+    return files.move_file(source, destination, overwrite, dry_run)
+
+
+@mcp.tool()
+async def rename_file(
+    path: str,
+    new_name: str,
+    overwrite: bool = Field(default=False),
+    dry_run: bool = Field(default=False),
+) -> str:
+    """
+    Rename a file or directory within its current parent directory.
+
+    Args:
+        path: Existing file or directory path
+        new_name: New file name only, not a path
+        overwrite: Allow replacing an existing destination
+        dry_run: Return the planned action without renaming
+
+    Returns:
+        JSON string with operation details or an error message
+    """
+    return files.rename_file(path, new_name, overwrite, dry_run)
+
+
+@mcp.tool()
+async def trash_file(path: str, dry_run: bool = Field(default=False)) -> str:
+    """
+    Move a file or directory to the macOS Trash. Permanent delete is not supported.
+
+    Args:
+        path: Existing file or directory path
+        dry_run: Return the planned action without moving to Trash
+
+    Returns:
+        JSON string with operation details or an error message
+    """
+    return files.trash_file(path, dry_run)
+
+
+@mcp.tool()
+async def reveal_in_finder(path: str) -> str:
+    """
+    Reveal a file or directory in Finder.
+
+    Args:
+        path: Existing file or directory path
+
+    Returns:
+        JSON string with operation details or an error message
+    """
+    return files.reveal_in_finder(path)
+
+
+@mcp.tool()
+async def get_finder_selection() -> str:
+    """
+    Get the currently selected Finder items as paths and metadata.
+
+    Returns:
+        JSON string with selected Finder items or an error message
+    """
+    return files.get_finder_selection()
 
 
 @mcp.tool()
