@@ -7,6 +7,7 @@ from tools import (
     app,
     calendar,
     chrome,
+    clipboard,
     contacts,
     display,
     files,
@@ -221,6 +222,100 @@ async def get_finder_selection() -> str:
         JSON string with selected Finder items or an error message
     """
     return files.get_finder_selection()
+
+
+@mcp.tool()
+async def get_clipboard_text(
+    max_chars: int = Field(default=20000, ge=1, le=200000),
+) -> str:
+    """
+    Read plain text from the macOS clipboard.
+
+    Args:
+        max_chars: Maximum number of characters to return
+
+    Returns:
+        JSON string with clipboard text and truncation metadata, or an error message
+    """
+    return clipboard.get_clipboard_text(max_chars)
+
+
+@mcp.tool()
+async def set_clipboard_text(text: str) -> str:
+    """
+    Write plain text to the macOS clipboard.
+
+    Args:
+        text: Text to place on the clipboard
+
+    Returns:
+        JSON string with operation metadata, or an error message
+    """
+    return clipboard.set_clipboard_text(text)
+
+
+@mcp.tool()
+async def clear_clipboard() -> str:
+    """
+    Clear clipboard contents.
+
+    Returns:
+        JSON string with operation metadata, or an error message
+    """
+    return clipboard.clear_clipboard()
+
+
+@mcp.tool()
+async def get_clipboard_files() -> str:
+    """
+    Return file URLs currently available on the macOS clipboard.
+
+    Returns:
+        JSON string with copied file paths, or an error message
+    """
+    return clipboard.get_clipboard_files()
+
+
+@mcp.tool()
+async def set_clipboard_files(paths: list[str]) -> str:
+    """
+    Put one or more filesystem paths on the macOS clipboard for Finder paste.
+
+    Args:
+        paths: Existing file or directory paths to place on the clipboard
+
+    Returns:
+        JSON string with operation metadata, or an error message
+    """
+    return clipboard.set_clipboard_files(paths)
+
+
+@mcp.tool()
+async def save_clipboard_image(output_path: str = Field(default="")) -> str | list[object]:
+    """
+    Save an image from the macOS clipboard to a PNG file and share it with the model.
+
+    Args:
+        output_path: Optional output path for the PNG
+
+    Returns:
+        A text status plus image content, or an error message
+    """
+    return clipboard.save_clipboard_image(output_path)
+
+
+@mcp.tool()
+async def set_clipboard_image(path: str) -> str:
+    """
+    Put an image file on the macOS clipboard.
+
+    Args:
+        path: Existing image file path
+
+    Returns:
+        JSON string with operation metadata, or an error message
+    """
+    return clipboard.set_clipboard_image(path)
 
 
 @mcp.tool()

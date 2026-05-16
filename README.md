@@ -7,6 +7,7 @@
 - 📝 **Notes & Reminders** - Create and search notes, set reminders  
 - 📅 **Calendar** - Create and view events
 - 🗂️ **Files & Finder** - Find, inspect, copy, move, rename, reveal, and trash files safely
+- 📋 **Clipboard** - Read/write text, copy file paths for Finder paste, and save/set clipboard images
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
 - 📸 **Screen Capture** - Capture the active display and share image output with the model
@@ -31,6 +32,8 @@ This repo currently includes one shareable skill:
 - System: `open-application.applescript`, brightness + volume scripts
 - Screenshot: `capture-screenshot.applescript`
 - Files/Finder MCP: `find_files`, `list_directory`, `get_file_info`, `copy_file`, `copy_directory`, `move_file`, `rename_file`, `trash_file`, `reveal_in_finder`, `get_finder_selection`
+- Clipboard MCP: `get_clipboard_text`, `set_clipboard_text`, `clear_clipboard`, `get_clipboard_files`, `set_clipboard_files`, `save_clipboard_image`, `set_clipboard_image`
+- Clipboard script: `clipboard.swift`
 
 ## Skill Setup (Any Agent)
 
@@ -111,6 +114,10 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 - ✅ **Accessibility** - For screen glow and system controls
 - ✅ **Screen Recording** - Required for screenshot capture tools
 
+Clipboard text operations normally do not require extra permissions. Clipboard
+file and image operations use macOS pasteboard APIs and may prompt for security
+approval depending on the host app and OS settings.
+
 ### Safari Settings:
 Safari → Develop → **Allow JavaScript from Apple Events** ✅ (Required for Safari tools)
 
@@ -143,3 +150,12 @@ echo "hello" > /tmp/altic-file-smoke/source/example.txt
 - Use `reveal_in_finder` on the copied file
 - Select a file in Finder and call `get_finder_selection`
 - Use `trash_file` with `dry_run=true` before testing a real Trash move
+
+## Manual Smoke Tests For Clipboard Tools
+
+- Use `set_clipboard_text` with `hello`, then `get_clipboard_text`
+- Use `clear_clipboard`, then `get_clipboard_text`
+- Copy one or more files in Finder, then call `get_clipboard_files`
+- Use `set_clipboard_files` with an existing file path, then paste in Finder
+- Copy an image or screenshot, then call `save_clipboard_image`
+- Use `set_clipboard_image` with an existing PNG or JPEG file, then paste into an app that accepts images

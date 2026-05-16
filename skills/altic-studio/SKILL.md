@@ -11,6 +11,7 @@ license: Apache-2.0
 1. AppleScript mode for macOS apps and system actions
 2. MCP CDP mode for Google Chrome browser control
 3. MCP file mode for safe Finder and filesystem operations
+4. MCP clipboard mode for text, file, and image pasteboard operations
 
 It also includes a Swift utility script for active-display screenshots on macOS.
 
@@ -58,6 +59,7 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - `turn-down-volume.applescript` - args: `[amount_0_to_100]`
 - `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
 - `capture-active-screen.swift` - args: `<output_path>` (captures full display containing frontmost app)
+- `clipboard.swift` - subcommands: `get-files`, `set-files <paths...>`, `save-image <output_path>`, `set-image <image_path>`
 
 Swift command template (for active-display screenshots):
 
@@ -122,6 +124,36 @@ File workflow rules:
 - Use `reveal_in_finder` after file operations when the user wants to see the
   result in Finder.
 
+## Mode D: Clipboard Operations (MCP)
+
+Use MCP clipboard tools instead of shell commands when the user asks to inspect,
+copy, paste, clear, or save clipboard contents. These tools return JSON for text
+and file operations, `Error: ...` strings for failures, and image content for
+saved clipboard images.
+
+Available tools:
+
+- `get_clipboard_text` - args: `[max_chars]`
+- `set_clipboard_text` - args: `<text>`
+- `clear_clipboard` - args: none
+- `get_clipboard_files` - args: none
+- `set_clipboard_files` - args: `<paths>`
+- `save_clipboard_image` - args: `[output_path]`
+- `set_clipboard_image` - args: `<path>`
+
+Clipboard workflow rules:
+
+- Ask before overwriting clipboard contents unless the user explicitly asks to
+  copy, set, clear, or replace the clipboard.
+- Use `get_clipboard_text` first when the user asks what text is currently copied.
+- Use `get_clipboard_files` when the user says they copied files in Finder or
+  wants to paste copied files somewhere else.
+- Use `save_clipboard_image` when the user wants to inspect, store, or transform
+  an image currently on the clipboard.
+- Use `set_clipboard_files` with existing paths only; resolve ambiguous file
+  names with `find_files` before changing the clipboard.
+- Use `set_clipboard_image` only for existing image files.
+
 ## Operational Rules
 
 - Validate date/time format before running reminder/calendar scripts.
@@ -131,6 +163,9 @@ File workflow rules:
 - After mutating actions in Chrome, verify expected page state with `chrome_extract`.
 - For file mutations, verify the target with `get_file_info` or `list_directory`
   after the operation when the user needs confirmation.
+- For clipboard mutations, verify with `get_clipboard_text`,
+  `get_clipboard_files`, or `save_clipboard_image` when the user needs
+  confirmation.
 
 ## Permissions Checklist
 
