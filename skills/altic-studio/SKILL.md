@@ -12,8 +12,10 @@ license: Apache-2.0
 2. MCP CDP mode for Google Chrome browser control
 3. MCP file mode for safe Finder and filesystem operations
 4. MCP clipboard mode for text, file, and image pasteboard operations
+5. MCP window/workspace mode for arranging macOS apps and windows
 
-It also includes a Swift utility script for active-display screenshots on macOS.
+It also includes Swift utility scripts for active-display screenshots, clipboard
+file/image operations, and window/workspace management on macOS.
 
 ## Mode A: AppleScript (macOS apps)
 
@@ -60,11 +62,18 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
 - `capture-active-screen.swift` - args: `<output_path>` (captures full display containing frontmost app)
 - `clipboard.swift` - subcommands: `get-files`, `set-files <paths...>`, `save-image <output_path>`, `set-image <image_path>`
+- `window-manager.swift` - subcommands: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
 
 Swift command template (for active-display screenshots):
 
 ```bash
 swift "skills/altic-studio/scripts/capture-active-screen.swift" "/tmp/active-screen.png"
+```
+
+Swift command template (for window management):
+
+```bash
+swift "skills/altic-studio/scripts/window-manager.swift" "list_windows" '{"include_minimized":false}'
 ```
 
 ## Mode B: Chrome Browser Control (MCP CDP)
@@ -154,6 +163,40 @@ Clipboard workflow rules:
   names with `find_files` before changing the clipboard.
 - Use `set_clipboard_image` only for existing image files.
 
+## Mode E: Window and Workspace Operations (MCP)
+
+Use MCP window tools when the user asks to arrange the workspace, focus an app or
+window, tile apps side by side, resize windows, minimize windows, hide apps, quit
+apps, or inspect the frontmost app. These tools return JSON for successful
+operations and `Error: ...` strings for failures.
+
+Available tools:
+
+- `get_frontmost_app` - args: none
+- `list_windows` - args: `[app_name] [include_minimized]`
+- `focus_window` - args: `[app_name] [window_id] [window_index]`
+- `move_window` - args: `<x> <y> [app_name] [window_id] [window_index] [display_index]`
+- `resize_window` - args: `<width> <height> [app_name] [window_id] [window_index] [display_index]`
+- `center_window` - args: `[app_name] [window_id] [window_index] [display_index] [width] [height]`
+- `tile_windows` - args: `[layout=columns|rows|grid] [app_names] [display_index] [padding]`
+- `minimize` - args: `[app_name] [window_id] [window_index]`
+- `hide_app` - args: `<app_name>`
+- `quit_app` - args: `<app_name>`
+
+Window workflow rules:
+
+- Call `list_windows` before moving, resizing, minimizing, or focusing when the
+  target app has multiple windows or the target is ambiguous.
+- Prefer `app_name` for user-facing workflows and `window_id` for precise
+  follow-up operations after `list_windows`.
+- Use `display_index` when arranging windows on a specific display; otherwise
+  tools choose the display containing the target window.
+- Use `tile_windows` with explicit `app_names` when preparing a multi-app task.
+- Do not call `quit_app` unless the user explicitly asked to close or quit that
+  app.
+- If a window mutation fails with an Accessibility error, tell the user to grant
+  Accessibility permission to the host app running the MCP server.
+
 ## Operational Rules
 
 - Validate date/time format before running reminder/calendar scripts.
@@ -166,6 +209,8 @@ Clipboard workflow rules:
 - For clipboard mutations, verify with `get_clipboard_text`,
   `get_clipboard_files`, or `save_clipboard_image` when the user needs
   confirmation.
+- For window mutations, verify with `list_windows` when the user needs
+  confirmation.
 
 ## Permissions Checklist
 
@@ -173,8 +218,8 @@ Clipboard workflow rules:
 - Calendars access
 - Reminders access
 - Automation permission for app control
-- Accessibility permission for some system controls
-- Screen Recording permission for screenshots
+- Accessibility permission for system controls and window management
+- Screen Recording permission for screenshots and improved window discovery
 - Safari setting: Allow JavaScript from Apple Events
 - Google Chrome installed for CDP tools
 - Full Disk Access for reading Messages database

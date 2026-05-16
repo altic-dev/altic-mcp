@@ -2,12 +2,13 @@
 
 ## Features
 
-30+ tools for macOS automation:
+40+ tools for macOS automation:
 - 📱 **Messages & Contacts** - Send/read iMessages, search contacts
 - 📝 **Notes & Reminders** - Create and search notes, set reminders  
 - 📅 **Calendar** - Create and view events
 - 🗂️ **Files & Finder** - Find, inspect, copy, move, rename, reveal, and trash files safely
 - 📋 **Clipboard** - Read/write text, copy file paths for Finder paste, and save/set clipboard images
+- 🪟 **Window & Workspace** - List/focus apps and windows, move/resize/center/tile windows, minimize windows, hide apps, and quit apps
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
 - 📸 **Screen Capture** - Capture the active display and share image output with the model
@@ -19,7 +20,7 @@ This repo currently includes one shareable skill:
 
 - `altic-studio` (`skills/altic-studio/`)
   - Runs local AppleScript automations via `osascript` through the Bash tool
-  - Covers Messages, Contacts, Notes, Reminders, Calendar, Safari, system controls, screenshots, and Chrome CDP browser control
+  - Covers Messages, Contacts, Notes, Reminders, Calendar, Safari, window management, system controls, screenshots, and Chrome CDP browser control
   - Main skill manifest: `skills/altic-studio/SKILL.md`
 
 ### Key Scripts In `altic-studio`
@@ -33,7 +34,9 @@ This repo currently includes one shareable skill:
 - Screenshot: `capture-screenshot.applescript`
 - Files/Finder MCP: `find_files`, `list_directory`, `get_file_info`, `copy_file`, `copy_directory`, `move_file`, `rename_file`, `trash_file`, `reveal_in_finder`, `get_finder_selection`
 - Clipboard MCP: `get_clipboard_text`, `set_clipboard_text`, `clear_clipboard`, `get_clipboard_files`, `set_clipboard_files`, `save_clipboard_image`, `set_clipboard_image`
+- Window/Workspace MCP: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
 - Clipboard script: `clipboard.swift`
+- Window script: `window-manager.swift`
 
 ## Skill Setup (Any Agent)
 
@@ -111,8 +114,8 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 - ✅ **Reminders** - For creating reminders
 - ✅ **Automation** - Allow Claude to control apps (Messages, Notes, Safari)
 - ✅ **Finder Automation** - For Finder selection, reveal, and Trash file tools
-- ✅ **Accessibility** - For screen glow and system controls
-- ✅ **Screen Recording** - Required for screenshot capture tools
+- ✅ **Accessibility** - Required for screen glow, system controls, and window management tools such as focus_window, move_window, resize_window, center_window, tile_windows, minimize, hide_app, and quit_app
+- ✅ **Screen Recording** - Required for screenshot capture tools and improves window title/id discovery for list_windows on recent macOS versions
 
 Clipboard text operations normally do not require extra permissions. Clipboard
 file and image operations use macOS pasteboard APIs and may prompt for security
@@ -159,3 +162,14 @@ echo "hello" > /tmp/altic-file-smoke/source/example.txt
 - Use `set_clipboard_files` with an existing file path, then paste in Finder
 - Copy an image or screenshot, then call `save_clipboard_image`
 - Use `set_clipboard_image` with an existing PNG or JPEG file, then paste into an app that accepts images
+
+## Manual Smoke Tests For Window Tools
+
+- Call `get_frontmost_app` while Finder or Safari is active.
+- Call `list_windows` and confirm visible app windows include frame and display metadata.
+- Open two apps, then call `tile_windows` with `layout="columns"` and their app names.
+- Call `center_window` with an app name and confirm the frontmost window is centered inside the visible display area.
+- Call `move_window` and `resize_window` with a test app window, then call `list_windows` to confirm the new frame.
+- Call `minimize` on a test app window and confirm it minimizes.
+- Call `hide_app` on a non-critical app and confirm the app is hidden.
+- Call `quit_app` only on a disposable test app.
