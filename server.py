@@ -17,6 +17,7 @@ from tools import (
     safari,
     screenshot,
     system,
+    window,
 )
 
 mcp = FastMCP("Altic-MCP")
@@ -36,6 +37,217 @@ def open_app(name: str) -> str:
         A success or failure message
     """
     return app.open_app(name)
+
+
+@mcp.tool()
+async def get_frontmost_app() -> str:
+    """
+    Get the currently frontmost macOS application.
+
+    Returns:
+        JSON string with app name, bundle id, pid, and active state.
+    """
+    return window.get_frontmost_app()
+
+
+@mcp.tool()
+async def list_windows(
+    app_name: str = Field(default=""),
+    include_minimized: bool = Field(default=False),
+) -> str:
+    """
+    List manageable macOS windows.
+
+    Args:
+        app_name: Optional app name, bundle id, or process name filter
+        include_minimized: Include minimized windows when available
+
+    Returns:
+        JSON string with window ids, app metadata, titles, frames, and display indexes.
+    """
+    return window.list_windows(app_name, include_minimized)
+
+
+@mcp.tool()
+async def focus_window(
+    app_name: str = Field(default=""),
+    window_id: int | None = Field(default=None, ge=1),
+    window_index: int | None = Field(default=None, ge=1),
+) -> str:
+    """
+    Focus a macOS window by window id, app name, or frontmost fallback.
+
+    Args:
+        app_name: Optional app name, bundle id, or process name
+        window_id: Optional CoreGraphics window id
+        window_index: Optional 1-based index among the app's windows
+
+    Returns:
+        JSON string with focused window metadata, or an error message.
+    """
+    return window.focus_window(app_name, window_id, window_index)
+
+
+@mcp.tool()
+async def move_window(
+    x: int,
+    y: int,
+    app_name: str = Field(default=""),
+    window_id: int | None = Field(default=None, ge=1),
+    window_index: int | None = Field(default=None, ge=1),
+    display_index: int | None = Field(default=None, ge=1),
+) -> str:
+    """
+    Move a macOS window to a display-aware top-left position.
+
+    Args:
+        x: Target top-left x coordinate
+        y: Target top-left y coordinate
+        app_name: Optional app name, bundle id, or process name
+        window_id: Optional CoreGraphics window id
+        window_index: Optional 1-based index among the app's windows
+        display_index: Optional 1-based display index for clamping placement
+
+    Returns:
+        JSON string with final window metadata, or an error message.
+    """
+    return window.move_window(x, y, app_name, window_id, window_index, display_index)
+
+
+@mcp.tool()
+async def resize_window(
+    width: int = Field(ge=1),
+    height: int = Field(ge=1),
+    app_name: str = Field(default=""),
+    window_id: int | None = Field(default=None, ge=1),
+    window_index: int | None = Field(default=None, ge=1),
+    display_index: int | None = Field(default=None, ge=1),
+) -> str:
+    """
+    Resize a macOS window and clamp it to the selected or current display.
+
+    Args:
+        width: Target width in points
+        height: Target height in points
+        app_name: Optional app name, bundle id, or process name
+        window_id: Optional CoreGraphics window id
+        window_index: Optional 1-based index among the app's windows
+        display_index: Optional 1-based display index for clamping placement
+
+    Returns:
+        JSON string with final window metadata, or an error message.
+    """
+    return window.resize_window(
+        width,
+        height,
+        app_name,
+        window_id,
+        window_index,
+        display_index,
+    )
+
+
+@mcp.tool()
+async def center_window(
+    app_name: str = Field(default=""),
+    window_id: int | None = Field(default=None, ge=1),
+    window_index: int | None = Field(default=None, ge=1),
+    display_index: int | None = Field(default=None, ge=1),
+    width: int | None = Field(default=None, ge=1),
+    height: int | None = Field(default=None, ge=1),
+) -> str:
+    """
+    Center a macOS window on its current display or a selected display.
+
+    Args:
+        app_name: Optional app name, bundle id, or process name
+        window_id: Optional CoreGraphics window id
+        window_index: Optional 1-based index among the app's windows
+        display_index: Optional 1-based display index
+        width: Optional width to apply before centering
+        height: Optional height to apply before centering
+
+    Returns:
+        JSON string with final window metadata, or an error message.
+    """
+    return window.center_window(
+        app_name,
+        window_id,
+        window_index,
+        display_index,
+        width,
+        height,
+    )
+
+
+@mcp.tool()
+async def tile_windows(
+    layout: str = Field(default="columns"),
+    app_names: list[str] | None = Field(default=None),
+    display_index: int | None = Field(default=None, ge=1),
+    padding: int = Field(default=8, ge=0, le=100),
+) -> str:
+    """
+    Tile multiple macOS windows on a display.
+
+    Args:
+        layout: Tile layout: columns, rows, or grid
+        app_names: Optional app names to tile in order; defaults to visible windows
+        display_index: Optional 1-based display index
+        padding: Gap around and between windows
+
+    Returns:
+        JSON string with final window metadata for tiled windows, or an error message.
+    """
+    return window.tile_windows(layout, app_names, display_index, padding)
+
+
+@mcp.tool()
+async def minimize(
+    app_name: str = Field(default=""),
+    window_id: int | None = Field(default=None, ge=1),
+    window_index: int | None = Field(default=None, ge=1),
+) -> str:
+    """
+    Minimize a macOS window.
+
+    Args:
+        app_name: Optional app name, bundle id, or process name
+        window_id: Optional CoreGraphics window id
+        window_index: Optional 1-based index among the app's windows
+
+    Returns:
+        JSON string with minimized window metadata, or an error message.
+    """
+    return window.minimize(app_name, window_id, window_index)
+
+
+@mcp.tool()
+async def hide_app(app_name: str) -> str:
+    """
+    Hide a running macOS app.
+
+    Args:
+        app_name: App name, bundle id, or process name
+
+    Returns:
+        JSON string with hidden app metadata, or an error message.
+    """
+    return window.hide_app(app_name)
+
+
+@mcp.tool()
+async def quit_app(app_name: str) -> str:
+    """
+    Quit a running macOS app.
+
+    Args:
+        app_name: App name, bundle id, or process name
+
+    Returns:
+        JSON string with quit app metadata, or an error message.
+    """
+    return window.quit_app(app_name)
 
 
 @mcp.tool()
