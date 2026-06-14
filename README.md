@@ -11,7 +11,7 @@
 - 🪟 **Window & Workspace** - List/focus apps and windows, move/resize/center/tile windows, minimize windows, hide apps, and quit apps
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
-- 📸 **Screen Capture** - Capture the active display and share image output with the model
+- 📸 **Screen Capture & OCR** - Capture the active display, share image output, and extract visible text with local Vision OCR
 - 🖥️ **System** - Open apps, adjust brightness/volume, visual effects
 
 ## Available Skills
@@ -31,9 +31,10 @@ This repo currently includes one shareable skill:
 - Calendar: `create-calendar-event.applescript`, `list-all-calendar-events-for-day.applescript`
 - Safari: open/close/switch/navigate/reload/history/page-info scripts
 - System: `open-application.applescript`, brightness + volume scripts
-- Screenshot: `capture-screenshot.applescript`
+- Screenshot: `capture-screenshot.applescript`, `capture-active-screen.swift`, `extract-screen-text.swift`
 - Files/Finder MCP: `find_files`, `list_directory`, `get_file_info`, `copy_file`, `copy_directory`, `move_file`, `rename_file`, `trash_file`, `reveal_in_finder`, `get_finder_selection`
 - Clipboard MCP: `get_clipboard_text`, `set_clipboard_text`, `clear_clipboard`, `get_clipboard_files`, `set_clipboard_files`, `save_clipboard_image`, `set_clipboard_image`
+- Screen OCR MCP: `extract_screen_text`
 - Window/Workspace MCP: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
 - Clipboard script: `clipboard.swift`
 - Window script: `window-manager.swift`
@@ -115,7 +116,13 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 - ✅ **Automation** - Allow Claude to control apps (Messages, Notes, Safari)
 - ✅ **Finder Automation** - For Finder selection, reveal, and Trash file tools
 - ✅ **Accessibility** - Required for screen glow, system controls, and window management tools such as focus_window, move_window, resize_window, center_window, tile_windows, minimize, hide_app, and quit_app
-- ✅ **Screen Recording** - Required for screenshot capture tools and improves window title/id discovery for list_windows on recent macOS versions
+- ✅ **Screen Recording** - Required for screenshot capture and `extract_screen_text`; also improves window title/id discovery for list_windows on recent macOS versions
+
+`extract_screen_text` uses Apple Foundation Models with Vision-backed OCRTool as
+the primary text extraction path on macOS 27 when Apple Intelligence is
+available, then falls back to deterministic local Vision OCR on older or
+unsupported runtimes. Optional visual understanding modes do not add Core AI
+model assets as a default dependency.
 
 Clipboard text operations normally do not require extra permissions. Clipboard
 file and image operations use macOS pasteboard APIs and may prompt for security

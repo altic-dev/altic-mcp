@@ -13,9 +13,10 @@ license: Apache-2.0
 3. MCP file mode for safe Finder and filesystem operations
 4. MCP clipboard mode for text, file, and image pasteboard operations
 5. MCP window/workspace mode for arranging macOS apps and windows
+6. MCP screen OCR mode for extracting visible text from the active display
 
 It also includes Swift utility scripts for active-display screenshots, clipboard
-file/image operations, and window/workspace management on macOS.
+file/image operations, screen OCR, and window/workspace management on macOS.
 
 ## Mode A: AppleScript (macOS apps)
 
@@ -61,6 +62,7 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - `turn-down-volume.applescript` - args: `[amount_0_to_100]`
 - `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
 - `capture-active-screen.swift` - args: `<output_path>` (captures full display containing frontmost app)
+- `extract-screen-text.swift` - args: `<output_path> [accurate|fast] [languages_csv] [include_boxes] [none|summary|ui_map]`
 - `clipboard.swift` - subcommands: `get-files`, `set-files <paths...>`, `save-image <output_path>`, `set-image <image_path>`
 - `window-manager.swift` - subcommands: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
 
@@ -68,6 +70,12 @@ Swift command template (for active-display screenshots):
 
 ```bash
 swift "skills/altic-studio/scripts/capture-active-screen.swift" "/tmp/active-screen.png"
+```
+
+Swift command template (for active-display OCR):
+
+```bash
+swift "skills/altic-studio/scripts/extract-screen-text.swift" "/tmp/screen-text.png" "accurate" "" "true" "none"
 ```
 
 Swift command template (for window management):
@@ -90,6 +98,7 @@ Use MCP tools for deterministic Chrome automation:
 - `chrome_close_session`
 - `chrome_list_sessions`
 - `capture_active_screen`
+- `extract_screen_text`
 
 Execution pattern:
 
@@ -98,7 +107,8 @@ Execution pattern:
 3. Interact with click and type actions.
 4. Verify state with extraction.
 5. Capture screenshots on checkpoints or failures.
-6. Close session.
+6. Use `extract_screen_text` when visible page/app text is needed from the active display rather than DOM extraction.
+7. Close session.
 
 ## Mode C: File Finder and File Operations (MCP)
 
@@ -197,6 +207,34 @@ Window workflow rules:
 - If a window mutation fails with an Accessibility error, tell the user to grant
   Accessibility permission to the host app running the MCP server.
 
+## Mode F: Screen OCR (MCP)
+
+Use MCP screen OCR when the user asks to read visible text from the current app,
+inspect text in a screenshot-like view, or extract text from a non-browser app.
+This tool returns JSON with combined text, OCR line metadata, the screenshot
+path used for recognition, and optional visual understanding metadata.
+
+Available tools:
+
+- `extract_screen_text` - args: `[output_path] [recognition_level=accurate|fast] [languages] [include_boxes] [max_chars] [visual_understanding=none|summary|ui_map]`
+
+Screen OCR workflow rules:
+
+- Prefer `chrome_extract` for browser DOM text when a Chrome CDP session is
+  already available; use `extract_screen_text` for rendered text, canvas text,
+  screenshots, PDFs, images, and non-browser apps.
+- Use `recognition_level="accurate"` by default; use `"fast"` only when speed
+  matters more than precision.
+- Set `languages` to a comma-separated list such as `en-US,fr-FR` only when the
+  expected language is known.
+- Keep `visual_understanding="none"` unless the user asks for higher-level
+  image or UI interpretation. On macOS 27 with Apple Intelligence available,
+  `extract_screen_text` uses Apple Foundation Models plus Vision-backed OCRTool
+  as the primary extraction path; on older or unsupported runtimes it falls back
+  to deterministic Vision OCR.
+- If OCR fails with a permission error, tell the user to grant Screen Recording
+  permission to the host app running the MCP server.
+
 ## Operational Rules
 
 - Validate date/time format before running reminder/calendar scripts.
@@ -211,6 +249,9 @@ Window workflow rules:
   confirmation.
 - For window mutations, verify with `list_windows` when the user needs
   confirmation.
+- Use `extract_screen_text` instead of manual screenshot inspection when the
+  task depends on visible text in an app or page that is not accessible through
+  Chrome DOM extraction.
 
 ## Permissions Checklist
 
@@ -220,6 +261,10 @@ Window workflow rules:
 - Automation permission for app control
 - Accessibility permission for system controls and window management
 - Screen Recording permission for screenshots and improved window discovery
+- Screen Recording permission for `extract_screen_text`; FoundationModels
+  primary extraction and optional visual understanding modes require macOS 27,
+  Apple Intelligence availability, and a FoundationModels/OCRTool-capable
+  SDK/runtime
 - Safari setting: Allow JavaScript from Apple Events
 - Google Chrome installed for CDP tools
 - Full Disk Access for reading Messages database

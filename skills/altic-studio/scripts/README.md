@@ -19,6 +19,7 @@ osascript "skills/altic-studio/scripts/create-calendar-event.applescript" "Team 
 osascript "skills/altic-studio/scripts/navigate-safari.applescript" "https://example.com"
 osascript "skills/altic-studio/scripts/capture-screenshot.applescript" "/tmp/screen.png" "full"
 swift "skills/altic-studio/scripts/capture-active-screen.swift" "/tmp/active-screen.png"
+swift "skills/altic-studio/scripts/extract-screen-text.swift" "/tmp/screen-text.png" "accurate" "" "true" "none"
 swift "skills/altic-studio/scripts/clipboard.swift" get-files
 swift "skills/altic-studio/scripts/clipboard.swift" set-files "/Users/example/Desktop/report.pdf"
 swift "skills/altic-studio/scripts/clipboard.swift" save-image "/tmp/clipboard.png"

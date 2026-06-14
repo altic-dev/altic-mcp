@@ -1057,6 +1057,41 @@ async def capture_active_screen(
 
 
 @mcp.tool()
+async def extract_screen_text(
+    output_path: str = Field(default=""),
+    recognition_level: str = Field(default="accurate"),
+    languages: str = Field(default=""),
+    include_boxes: bool = Field(default=True),
+    max_chars: int = Field(default=20000, ge=1, le=200000),
+    visual_understanding: str = Field(default="none"),
+) -> str:
+    """
+    Capture the display containing the frontmost app and extract visible text
+    using local Vision OCR. Requires macOS Screen Recording permission.
+
+    Args:
+        output_path: Optional file path for the captured PNG used for OCR
+        recognition_level: OCR mode, either "accurate" or "fast"
+        languages: Optional comma-separated recognition language identifiers
+        include_boxes: Include recognized text bounding boxes in the JSON output
+        max_chars: Maximum characters to return in the combined text field
+        visual_understanding: Optional macOS 27 extension mode: "none", "summary", or "ui_map"
+
+    Returns:
+        JSON string with OCR text, line metadata, screenshot path, and optional
+        visual understanding metadata; or an error message.
+    """
+    return screenshot.extract_screen_text(
+        output_path,
+        recognition_level,
+        languages,
+        include_boxes,
+        max_chars,
+        visual_understanding,
+    )
+
+
+@mcp.tool()
 async def add_screen_glow() -> str:
     """
     Add a visual feedback indicator (orange glow around screen edges) to show that automated actions are in progress.
