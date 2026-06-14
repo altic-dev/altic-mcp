@@ -15,6 +15,7 @@ from tools import (
     notes,
     reminders,
     safari,
+    screen_text,
     screenshot,
     system,
     window,
@@ -1054,6 +1055,36 @@ async def capture_active_screen(
         A text status plus image content, or an error message
     """
     return screenshot.capture_active_screen(output_path)
+
+
+@mcp.tool()
+async def extract_screen_text(
+    output_path: str = Field(default=""),
+    max_chars: int = Field(default=20000, ge=1, le=200000),
+    include_visual_summary: bool = Field(default=False),
+    visual_prompt: str = Field(
+        default=screen_text.DEFAULT_VISUAL_PROMPT,
+    ),
+) -> str:
+    """
+    Capture the active display and extract visible text with macOS Vision OCR.
+    Optionally request a macOS 27 Foundation Models visual summary.
+
+    Args:
+        output_path: Optional file path for the captured PNG
+        max_chars: Maximum OCR text characters to return
+        include_visual_summary: Ask macOS 27 Foundation Models to summarize the image
+        visual_prompt: Prompt used when visual summary is enabled
+
+    Returns:
+        JSON string with OCR text, screenshot path, confidence metadata, and optional visual summary.
+    """
+    return screen_text.extract_screen_text(
+        output_path,
+        max_chars,
+        include_visual_summary,
+        visual_prompt,
+    )
 
 
 @mcp.tool()

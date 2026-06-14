@@ -13,9 +13,10 @@ license: Apache-2.0
 3. MCP file mode for safe Finder and filesystem operations
 4. MCP clipboard mode for text, file, and image pasteboard operations
 5. MCP window/workspace mode for arranging macOS apps and windows
+6. MCP screen text mode for reading visible text from the active display
 
 It also includes Swift utility scripts for active-display screenshots, clipboard
-file/image operations, and window/workspace management on macOS.
+file/image operations, screen OCR, and window/workspace management on macOS.
 
 ## Mode A: AppleScript (macOS apps)
 
@@ -61,6 +62,7 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 - `turn-down-volume.applescript` - args: `[amount_0_to_100]`
 - `capture-screenshot.applescript` - args: `[output_path] [full|interactive|window]`
 - `capture-active-screen.swift` - args: `<output_path>` (captures full display containing frontmost app)
+- `extract-screen-text.swift` - args: `<output_path> [include_visual_summary] [visual_prompt]` (captures active display and extracts OCR text)
 - `clipboard.swift` - subcommands: `get-files`, `set-files <paths...>`, `save-image <output_path>`, `set-image <image_path>`
 - `window-manager.swift` - subcommands: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
 
@@ -68,6 +70,12 @@ Swift command template (for active-display screenshots):
 
 ```bash
 swift "skills/altic-studio/scripts/capture-active-screen.swift" "/tmp/active-screen.png"
+```
+
+Swift command template (for screen OCR):
+
+```bash
+swift "skills/altic-studio/scripts/extract-screen-text.swift" "/tmp/screen-text.png" false
 ```
 
 Swift command template (for window management):
@@ -90,6 +98,7 @@ Use MCP tools for deterministic Chrome automation:
 - `chrome_close_session`
 - `chrome_list_sessions`
 - `capture_active_screen`
+- `extract_screen_text`
 
 Execution pattern:
 
@@ -99,6 +108,29 @@ Execution pattern:
 4. Verify state with extraction.
 5. Capture screenshots on checkpoints or failures.
 6. Close session.
+
+## Mode B2: Screen Text and Visual Understanding (MCP)
+
+Use `extract_screen_text` when the user asks to read, transcribe, copy, or inspect
+visible text on the active screen. Default to OCR-only mode because it is faster,
+deterministic, and does not require Foundation Models availability.
+
+Available tool:
+
+- `extract_screen_text` - args: `[output_path] [max_chars] [include_visual_summary] [visual_prompt]`
+
+Screen text workflow rules:
+
+- Use `extract_screen_text` with `include_visual_summary=false` for requests like
+  "read the screen", "what text is visible", or "extract the error message".
+- Use `include_visual_summary=true` only when the user asks what is shown, what
+  to click, how to interpret the visible UI, or asks for visual understanding
+  beyond raw text.
+- Visual summary mode requires macOS 27 plus Apple Foundation Models
+  availability. If unavailable, use the OCR result and report the returned
+  `visual_error`.
+- Use `capture_active_screen` instead when the user needs image inspection or a
+  screenshot artifact rather than extracted text.
 
 ## Mode C: File Finder and File Operations (MCP)
 
@@ -211,6 +243,8 @@ Window workflow rules:
   confirmation.
 - For window mutations, verify with `list_windows` when the user needs
   confirmation.
+- For screen text extraction, use the returned OCR JSON as the source of truth.
+  If visual summary mode fails, continue with OCR text when it is sufficient.
 
 ## Permissions Checklist
 
@@ -220,6 +254,8 @@ Window workflow rules:
 - Automation permission for app control
 - Accessibility permission for system controls and window management
 - Screen Recording permission for screenshots and improved window discovery
+- Screen Recording permission for screen text extraction
+- macOS 27 and Apple Foundation Models availability for screen visual summary mode
 - Safari setting: Allow JavaScript from Apple Events
 - Google Chrome installed for CDP tools
 - Full Disk Access for reading Messages database

@@ -12,6 +12,7 @@
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
 - 📸 **Screen Capture** - Capture the active display and share image output with the model
+- 🔎 **Screen Text** - Extract visible text from the active display with Vision OCR, with optional macOS 27 visual summaries
 - 🖥️ **System** - Open apps, adjust brightness/volume, visual effects
 
 ## Available Skills
@@ -32,6 +33,7 @@ This repo currently includes one shareable skill:
 - Safari: open/close/switch/navigate/reload/history/page-info scripts
 - System: `open-application.applescript`, brightness + volume scripts
 - Screenshot: `capture-screenshot.applescript`
+- Screen text MCP: `extract_screen_text`
 - Files/Finder MCP: `find_files`, `list_directory`, `get_file_info`, `copy_file`, `copy_directory`, `move_file`, `rename_file`, `trash_file`, `reveal_in_finder`, `get_finder_selection`
 - Clipboard MCP: `get_clipboard_text`, `set_clipboard_text`, `clear_clipboard`, `get_clipboard_files`, `set_clipboard_files`, `save_clipboard_image`, `set_clipboard_image`
 - Window/Workspace MCP: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
@@ -115,7 +117,8 @@ Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/D
 - ✅ **Automation** - Allow Claude to control apps (Messages, Notes, Safari)
 - ✅ **Finder Automation** - For Finder selection, reveal, and Trash file tools
 - ✅ **Accessibility** - Required for screen glow, system controls, and window management tools such as focus_window, move_window, resize_window, center_window, tile_windows, minimize, hide_app, and quit_app
-- ✅ **Screen Recording** - Required for screenshot capture tools and improves window title/id discovery for list_windows on recent macOS versions
+- ✅ **Screen Recording** - Required for screenshot and screen text extraction tools and improves window title/id discovery for list_windows on recent macOS versions
+- ✅ **macOS 27 Apple Intelligence / Foundation Models availability** - Required only for `extract_screen_text` visual summary mode; OCR-only mode works without it
 
 Clipboard text operations normally do not require extra permissions. Clipboard
 file and image operations use macOS pasteboard APIs and may prompt for security
@@ -162,6 +165,13 @@ echo "hello" > /tmp/altic-file-smoke/source/example.txt
 - Use `set_clipboard_files` with an existing file path, then paste in Finder
 - Copy an image or screenshot, then call `save_clipboard_image`
 - Use `set_clipboard_image` with an existing PNG or JPEG file, then paste into an app that accepts images
+
+## Manual Smoke Tests For Screen Text Tools
+
+- Open a window with visible text, then call `extract_screen_text` with `include_visual_summary=false`.
+- Confirm the returned JSON includes visible text, `line_count`, `average_confidence`, and a valid `screenshot_path`.
+- On macOS 27 with Foundation Models available, call `extract_screen_text` with `include_visual_summary=true` and confirm `visual_summary` is populated.
+- On systems without visual summary support, confirm OCR text is still returned and `visual_error` explains the missing macOS 27/Foundation Models capability.
 
 ## Manual Smoke Tests For Window Tools
 
