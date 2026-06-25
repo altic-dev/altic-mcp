@@ -470,7 +470,7 @@ def reveal_in_finder(path: str) -> str:
         script = (
             'on run argv\n'
             '  tell application "Finder"\n'
-            '    reveal POSIX file (item 1 of argv)\n'
+            '    reveal (POSIX file (item 1 of argv) as alias)\n'
             "    activate\n"
             "  end tell\n"
             "end run\n"

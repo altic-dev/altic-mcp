@@ -202,6 +202,11 @@ def test_reveal_in_finder_uses_osascript(tmp_path, monkeypatch):
 
     assert result["action"] == "reveal_in_finder"
     assert seen["args"][0] == "osascript"
+    # Finder's `reveal` needs an alias/file reference; a bare `POSIX file`
+    # specifier raises -1728 ("Can't get POSIX file ..."). Ensure we coerce.
+    script = " ".join(seen["args"])
+    assert "as alias" in script
+    assert "reveal POSIX file (item 1 of argv)" not in script
 
 
 def test_get_finder_selection_parses_alias_output(monkeypatch):
