@@ -36,13 +36,18 @@ The full Altic automation surface is exposed as scripts under `skills/altic-stud
 
 - `open-application.applescript` - args: `<app_name>`
 - `send-message.applescript` - args: `<phone_or_handle> <message>`
+- `messages-manager.applescript` - args: `<list_chats|send_file> ...`
 - `read-recent-messages.applescript` - args: `<phone_or_handle> <count>`
 - `fetch-all-contacts.applescript` - args: none
+- `contacts-manager.applescript` - args: `<get|create|update> ...`
 - `set-reminder.applescript` - args: `<text> <YYYY-MM-DD HH:MM> [list_name]`
+- `reminders-manager.applescript` - args: `<list_lists|list|search|complete|delete|reschedule|update|show> ...`
 - `create-note.applescript` - args: `<title> <body> [folder]`
 - `search-for-note.applescript` - args: `<query> [max_results]`
+- `notes-manager.applescript` - args: `<list_folders|list|get|append|update|delete|move> ...`
 - `create-calendar-event.applescript` - args: `<title> <YYYY-MM-DD HH:MM> <duration_minutes> [calendar]`
 - `list-all-calendar-events-for-day.applescript` - args: `<YYYY-MM-DD>`
+- `calendar-manager.applescript` - args: `<list_calendars|list|search|update|delete|availability|create_recurring> ...`
 - `open-safari-tab.applescript` - args: `[url]`
 - `close-safari-tab.applescript` - args: `[tab_index|-1]`
 - `get-safari-tabs.applescript` - args: none
@@ -76,7 +81,68 @@ Swift command template (for window management):
 swift "skills/altic-studio/scripts/window-manager.swift" "list_windows" '{"include_minimized":false}'
 ```
 
-## Mode B: Chrome Browser Control (MCP CDP)
+## Mode B: Reminders, Calendar, And Notes (MCP)
+
+Use MCP tools for structured Messages, Contacts, Reminders, Calendar, and Notes workflows. These
+newer tools return JSON envelopes with `ok`, `action`, `data`, and `error`.
+Delete tools default to `dry_run=true`; only delete after explicit user
+confirmation.
+
+Available Messages tools:
+
+- `list_chats` - args: `[limit]`
+- `send_file_message` - args: `<recipient> <path> [message] [recipient_type]`
+
+Available Contacts tools:
+
+- `get_contact` - args: `<identifier>`
+- `create_contact` - args: `<first_name> <last_name> [organization] [phone] [email] [note]`
+- `update_contact` - args: `<identifier> [first_name] [last_name] [organization] [phone] [email] [note]`
+
+Available Reminders tools:
+
+- `list_reminder_lists` - args: none
+- `list_reminders` - args: `[list_name] [include_completed]`
+- `search_reminders` - args: `<query> [list_name] [include_completed]`
+- `complete_reminder` - args: `<identifier> [list_name]`
+- `delete_reminder` - args: `<identifier> [list_name] [dry_run]`
+- `reschedule_reminder` - args: `<identifier> <YYYY-MM-DD HH:MM> [list_name]`
+- `update_reminder` - args: `<identifier> [list_name] [name] [body] [datetime] [completed] [priority] [flagged]`
+- `show_reminder` - args: `<identifier> [list_name]`
+
+Available Calendar tools:
+
+- `list_calendars` - args: none
+- `list_calendar_events` - args: `<start_date> <end_date> [calendar_name]`
+- `search_calendar_events` - args: `<query> [start_date] [end_date] [calendar_name]`
+- `update_calendar_event` - args: `<identifier> [title] [start_datetime] [duration_minutes] [calendar_name] [location] [notes_text]`
+- `delete_calendar_event` - args: `<identifier> [start_date] [end_date] [calendar_name] [dry_run]`
+- `check_calendar_availability` - args: `<start_datetime> <duration_minutes> [calendar_name]`
+- `create_recurring_event` - args: `<title> <start_datetime> <duration_minutes> <frequency> [interval] [count] [until_date] [calendar_name] [location] [notes_text]`
+
+Available Notes tools:
+
+- `list_note_folders` - args: none
+- `list_notes` - args: `[folder] [max_results]`
+- `get_note` - args: `<identifier>`
+- `append_to_note` - args: `<identifier> <body>`
+- `update_note` - args: `<identifier> <body>`
+- `delete_note` - args: `<identifier> [dry_run]`
+- `move_note` - args: `<identifier> <folder>`
+
+Workflow rules:
+
+- Call list/search tools before mutating when the target is ambiguous.
+- Treat `identifier` as either an app-provided id or an exact title/name match.
+- If a mutation returns multiple matches, ask the user to disambiguate.
+- Keep destructive actions in dry-run mode until the user explicitly confirms.
+- Validate dates before calling tools: dates use `YYYY-MM-DD`, date-times use
+  `YYYY-MM-DD HH:MM`.
+- For `send_file_message`, prefer `recipient_type="chat"` after `list_chats`
+  when continuing an existing group thread; use `recipient_type="handle"` for a
+  direct phone number or email handle.
+
+## Mode C: Chrome Browser Control (MCP CDP)
 
 Use MCP tools for deterministic Chrome automation:
 
@@ -100,7 +166,7 @@ Execution pattern:
 5. Capture screenshots on checkpoints or failures.
 6. Close session.
 
-## Mode C: File Finder and File Operations (MCP)
+## Mode D: File Finder and File Operations (MCP)
 
 Use MCP file tools instead of shell commands when the user asks to find, inspect,
 copy, move, rename, reveal, or trash files. These tools return JSON for
@@ -133,7 +199,7 @@ File workflow rules:
 - Use `reveal_in_finder` after file operations when the user wants to see the
   result in Finder.
 
-## Mode D: Clipboard Operations (MCP)
+## Mode E: Clipboard Operations (MCP)
 
 Use MCP clipboard tools instead of shell commands when the user asks to inspect,
 copy, paste, clear, or save clipboard contents. These tools return JSON for text
@@ -163,7 +229,7 @@ Clipboard workflow rules:
   names with `find_files` before changing the clipboard.
 - Use `set_clipboard_image` only for existing image files.
 
-## Mode E: Window and Workspace Operations (MCP)
+## Mode F: Window and Workspace Operations (MCP)
 
 Use MCP window tools when the user asks to arrange the workspace, focus an app or
 window, tile apps side by side, resize windows, minimize windows, hide apps, quit

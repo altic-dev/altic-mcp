@@ -1,6 +1,9 @@
+import json
 import subprocess
-from typing import List
+from pathlib import Path
+
 from .constants import SCRIPTS_PREFIX
+from . import result
 
 
 def send_message(phone_number: str, message: str) -> str:
@@ -49,3 +52,78 @@ def read_recent_messages(phone_number: str, recent_message_count: int = 50) -> s
         return result.stdout
     except Exception as e:
         return f"Error: Failed to retrieve recent {recent_message_count} messages from number: {phone_number}, {str(e)}"
+
+
+def _run_manager(action: str, *args: str, timeout: int = 60) -> str:
+    script_path = SCRIPTS_PREFIX / "messages-manager.applescript"
+    tool_action = f"messages.{action}"
+
+    try:
+        completed = subprocess.run(
+            ["osascript", script_path, action, *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if completed.returncode != 0:
+            error_msg = completed.stderr.strip() or "Unknown error"
+            return result.error(
+                tool_action,
+                error_msg,
+                permission_required="Automation access for Messages",
+            )
+
+        stdout = completed.stdout.strip()
+        data = {} if not stdout else json.loads(stdout)
+        return result.ok(tool_action, data)
+    except subprocess.TimeoutExpired:
+        return result.error(tool_action, "Operation timed out", code="timeout")
+    except Exception as exc:
+        return result.error(tool_action, str(exc))
+
+
+def list_chats(limit: int = 50) -> str:
+    limit = max(1, min(limit, 500))
+    return _run_manager("list_chats", str(limit))
+
+
+def send_file_message(
+    recipient: str,
+    path: str,
+    message: str = "",
+    recipient_type: str = "handle",
+) -> str:
+    if not recipient or not recipient.strip():
+        return result.error(
+            "messages.send_file",
+            "recipient cannot be empty",
+            code="validation_error",
+        )
+    if recipient_type not in {"handle", "chat"}:
+        return result.error(
+            "messages.send_file",
+            "recipient_type must be one of: handle, chat",
+            code="validation_error",
+        )
+
+    target = Path(path).expanduser().resolve(strict=False)
+    if not target.exists():
+        return result.error(
+            "messages.send_file",
+            f"file does not exist: {target}",
+            code="validation_error",
+        )
+    if not target.is_file():
+        return result.error(
+            "messages.send_file",
+            f"path is not a file: {target}",
+            code="validation_error",
+        )
+
+    return _run_manager(
+        "send_file",
+        recipient.strip(),
+        str(target),
+        message,
+        recipient_type,
+    )

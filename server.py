@@ -546,6 +546,42 @@ def send_imessage(phone_number: str, message: str) -> str:
 
 
 @mcp.tool()
+async def list_chats(limit: int = Field(default=50, ge=1, le=500)) -> str:
+    """
+    List Messages chats available to the macOS Messages app.
+
+    Args:
+        limit: Maximum number of chats to return
+
+    Returns:
+        Structured JSON with chat ids, names, and account metadata.
+    """
+    return messages.list_chats(limit)
+
+
+@mcp.tool()
+async def send_file_message(
+    recipient: str,
+    path: str,
+    message: str = Field(default=""),
+    recipient_type: str = Field(default="handle"),
+) -> str:
+    """
+    Send a file attachment with Messages to a handle or chat id.
+
+    Args:
+        recipient: Phone/email handle, or chat id when recipient_type is "chat"
+        path: Existing local file path to send
+        message: Optional text message to send before the file
+        recipient_type: "handle" or "chat"
+
+    Returns:
+        Structured JSON with send metadata or an error message.
+    """
+    return messages.send_file_message(recipient, path, message, recipient_type)
+
+
+@mcp.tool()
 async def search_contacts(name: str) -> str:
     """
     Search for a phone number from contacts by name. Returns multiple
@@ -560,6 +596,82 @@ async def search_contacts(name: str) -> str:
         A list of matching contacts
     """
     return contacts.search_contacts(name)
+
+
+@mcp.tool()
+async def get_contact(identifier: str) -> str:
+    """
+    Get a unique Contacts record by id or name match.
+
+    Args:
+        identifier: Contact id or name text
+
+    Returns:
+        Structured JSON with contact fields, phone numbers, and emails.
+    """
+    return contacts.get_contact(identifier)
+
+
+@mcp.tool()
+async def create_contact(
+    first_name: str,
+    last_name: str,
+    organization: str = Field(default=""),
+    phone: str = Field(default=""),
+    email: str = Field(default=""),
+    note: str = Field(default=""),
+) -> str:
+    """
+    Create a Contacts record with optional organization, phone, email, and note.
+
+    Args:
+        first_name: Contact first name
+        last_name: Contact last name
+        organization: Optional organization/company
+        phone: Optional phone number to add with mobile label
+        email: Optional email to add with home label
+        note: Optional contact note
+
+    Returns:
+        Structured JSON with the created contact.
+    """
+    return contacts.create_contact(first_name, last_name, organization, phone, email, note)
+
+
+@mcp.tool()
+async def update_contact(
+    identifier: str,
+    first_name: str = Field(default=""),
+    last_name: str = Field(default=""),
+    organization: str = Field(default=""),
+    phone: str = Field(default=""),
+    email: str = Field(default=""),
+    note: str = Field(default=""),
+) -> str:
+    """
+    Update a unique Contacts record by id or name match.
+
+    Args:
+        identifier: Contact id or name text
+        first_name: Optional replacement first name
+        last_name: Optional replacement last name
+        organization: Optional replacement organization/company
+        phone: Optional phone number to add
+        email: Optional email address to add
+        note: Optional replacement note
+
+    Returns:
+        Structured JSON with the updated contact.
+    """
+    return contacts.update_contact(
+        identifier,
+        first_name,
+        last_name,
+        organization,
+        phone,
+        email,
+        note,
+    )
 
 
 @mcp.tool()
@@ -597,6 +709,170 @@ async def set_reminder(name: str, datetime: str, list_name: str = "Reminders") -
 
 
 @mcp.tool()
+async def list_reminder_lists() -> str:
+    """
+    List Apple Reminders lists.
+
+    Returns:
+        Structured JSON with list names or an error message.
+    """
+    return reminders.list_reminder_lists()
+
+
+@mcp.tool()
+async def list_reminders(
+    list_name: str = Field(default=""),
+    include_completed: bool = Field(default=False),
+) -> str:
+    """
+    List reminders, optionally filtered by list and completion state.
+
+    Args:
+        list_name: Optional Reminders list name
+        include_completed: Include completed reminders
+
+    Returns:
+        Structured JSON with reminder matches or an error message.
+    """
+    return reminders.list_reminders(list_name, include_completed)
+
+
+@mcp.tool()
+async def search_reminders(
+    query: str,
+    list_name: str = Field(default=""),
+    include_completed: bool = Field(default=False),
+) -> str:
+    """
+    Search reminders by name.
+
+    Args:
+        query: Text to match in reminder names
+        list_name: Optional Reminders list name
+        include_completed: Include completed reminders
+
+    Returns:
+        Structured JSON with reminder matches or an error message.
+    """
+    return reminders.search_reminders(query, list_name, include_completed)
+
+
+@mcp.tool()
+async def complete_reminder(
+    identifier: str,
+    list_name: str = Field(default=""),
+) -> str:
+    """
+    Mark an exact or uniquely matching reminder as complete.
+
+    Args:
+        identifier: Reminder id or name/title text
+        list_name: Optional Reminders list name
+
+    Returns:
+        Structured JSON with the updated reminder or an error message.
+    """
+    return reminders.complete_reminder(identifier, list_name)
+
+
+@mcp.tool()
+async def delete_reminder(
+    identifier: str,
+    list_name: str = Field(default=""),
+    dry_run: bool = Field(default=True),
+) -> str:
+    """
+    Delete an exact or uniquely matching reminder. Defaults to dry-run.
+
+    Args:
+        identifier: Reminder id or name/title text
+        list_name: Optional Reminders list name
+        dry_run: Return matching reminder without deleting when true
+
+    Returns:
+        Structured JSON with deletion details or an error message.
+    """
+    return reminders.delete_reminder(identifier, list_name, dry_run)
+
+
+@mcp.tool()
+async def reschedule_reminder(
+    identifier: str,
+    datetime: str,
+    list_name: str = Field(default=""),
+) -> str:
+    """
+    Reschedule an exact or uniquely matching reminder.
+
+    Args:
+        identifier: Reminder id or name/title text
+        datetime: New due date/time in "YYYY-MM-DD HH:MM" format
+        list_name: Optional Reminders list name
+
+    Returns:
+        Structured JSON with the updated reminder or an error message.
+    """
+    return reminders.reschedule_reminder(identifier, datetime, list_name)
+
+
+@mcp.tool()
+async def update_reminder(
+    identifier: str,
+    list_name: str = Field(default=""),
+    name: str = Field(default=""),
+    body: str = Field(default=""),
+    datetime: str = Field(default=""),
+    completed: bool | None = Field(default=None),
+    priority: int | None = Field(default=None, ge=0, le=9),
+    flagged: bool | None = Field(default=None),
+) -> str:
+    """
+    Update an exact or uniquely matching reminder.
+
+    Args:
+        identifier: Reminder id or name/title text
+        list_name: Optional Reminders list name
+        name: Optional replacement reminder name
+        body: Optional replacement reminder notes
+        datetime: Optional due date/time in "YYYY-MM-DD HH:MM" format
+        completed: Optional completion state
+        priority: Optional priority from 0 to 9
+        flagged: Optional flagged state
+
+    Returns:
+        Structured JSON with the updated reminder or an error message.
+    """
+    return reminders.update_reminder(
+        identifier,
+        list_name,
+        name,
+        body,
+        datetime,
+        completed,
+        priority,
+        flagged,
+    )
+
+
+@mcp.tool()
+async def show_reminder(
+    identifier: str,
+    list_name: str = Field(default=""),
+) -> str:
+    """
+    Reveal an exact or uniquely matching reminder in the Reminders app.
+
+    Args:
+        identifier: Reminder id or name/title text
+        list_name: Optional Reminders list name
+
+    Returns:
+        Structured JSON with the shown reminder or an error message.
+    """
+    return reminders.show_reminder(identifier, list_name)
+
+
+@mcp.tool()
 async def create_note(name: str, body: str, folder: str = Field(default="")) -> str:
     """
     Create a note
@@ -611,6 +887,109 @@ async def create_note(name: str, body: str, folder: str = Field(default="")) -> 
         A success or error message
     """
     return notes.create_note(name, body, folder)
+
+
+@mcp.tool()
+async def list_note_folders() -> str:
+    """
+    List Apple Notes folders.
+
+    Returns:
+        Structured JSON with folder names or an error message.
+    """
+    return notes.list_note_folders()
+
+
+@mcp.tool()
+async def list_notes(
+    folder: str = Field(default=""),
+    max_results: int = Field(default=25, ge=1, le=200),
+) -> str:
+    """
+    List Apple Notes, optionally filtered by folder.
+
+    Args:
+        folder: Optional Notes folder name
+        max_results: Maximum notes to return
+
+    Returns:
+        Structured JSON with note metadata or an error message.
+    """
+    return notes.list_notes(folder, max_results)
+
+
+@mcp.tool()
+async def get_note(identifier: str) -> str:
+    """
+    Get a note by id or title.
+
+    Args:
+        identifier: Note id or title text
+
+    Returns:
+        Structured JSON with note content or an error message.
+    """
+    return notes.get_note(identifier)
+
+
+@mcp.tool()
+async def append_to_note(identifier: str, body: str) -> str:
+    """
+    Append plain text to a note by id or title.
+
+    Args:
+        identifier: Note id or title text
+        body: Plain text to append
+
+    Returns:
+        Structured JSON with the updated note or an error message.
+    """
+    return notes.append_to_note(identifier, body)
+
+
+@mcp.tool()
+async def update_note(identifier: str, body: str) -> str:
+    """
+    Replace a note body by id or title.
+
+    Args:
+        identifier: Note id or title text
+        body: Replacement plain text/HTML body
+
+    Returns:
+        Structured JSON with the updated note or an error message.
+    """
+    return notes.update_note(identifier, body)
+
+
+@mcp.tool()
+async def delete_note(identifier: str, dry_run: bool = Field(default=True)) -> str:
+    """
+    Delete a note by id or title. Defaults to dry-run.
+
+    Args:
+        identifier: Note id or title text
+        dry_run: Return matching note without deleting when true
+
+    Returns:
+        Structured JSON with deletion details or an error message.
+    """
+    return notes.delete_note(identifier, dry_run)
+
+
+@mcp.tool()
+async def move_note(identifier: str, folder: str) -> str:
+    """
+    Move a note by id or title to an existing folder.
+
+    Args:
+        identifier: Note id or title text
+        folder: Destination folder name
+
+    Returns:
+        Structured JSON with moved note metadata or an error message.
+    """
+    return notes.move_note(identifier, folder)
 
 
 @mcp.tool()
@@ -728,6 +1107,194 @@ async def list_calendar_events_for_day(date: str) -> str:
         List of events for the specified day or error message
     """
     return calendar.list_calendar_events_for_day(date)
+
+
+@mcp.tool()
+async def list_calendars() -> str:
+    """
+    List Apple Calendar calendars.
+
+    Returns:
+        Structured JSON with calendar names or an error message.
+    """
+    return calendar.list_calendars()
+
+
+@mcp.tool()
+async def list_calendar_events(
+    start_date: str,
+    end_date: str,
+    calendar_name: str = Field(default=""),
+) -> str:
+    """
+    List Calendar events across a date range.
+
+    Args:
+        start_date: Start date in "YYYY-MM-DD" format
+        end_date: End date in "YYYY-MM-DD" format
+        calendar_name: Optional calendar name
+
+    Returns:
+        Structured JSON with events or an error message.
+    """
+    return calendar.list_calendar_events(start_date, end_date, calendar_name)
+
+
+@mcp.tool()
+async def search_calendar_events(
+    query: str,
+    start_date: str = Field(default=""),
+    end_date: str = Field(default=""),
+    calendar_name: str = Field(default=""),
+) -> str:
+    """
+    Search Calendar events by title, location, or notes.
+
+    Args:
+        query: Search text
+        start_date: Optional start date in "YYYY-MM-DD" format
+        end_date: Optional end date in "YYYY-MM-DD" format
+        calendar_name: Optional calendar name
+
+    Returns:
+        Structured JSON with matching events or an error message.
+    """
+    return calendar.search_calendar_events(query, start_date, end_date, calendar_name)
+
+
+@mcp.tool()
+async def update_calendar_event(
+    identifier: str,
+    title: str = Field(default=""),
+    start_datetime: str = Field(default=""),
+    duration_minutes: int | None = Field(default=None),
+    calendar_name: str = Field(default=""),
+    location: str = Field(default=""),
+    notes_text: str = Field(default=""),
+) -> str:
+    """
+    Update an exact or uniquely matching Calendar event.
+
+    Args:
+        identifier: Event id or title text
+        title: Optional replacement title
+        start_datetime: Optional replacement start in "YYYY-MM-DD HH:MM" format
+        duration_minutes: Optional replacement duration
+        calendar_name: Optional calendar name for matching
+        location: Optional replacement location
+        notes_text: Optional replacement notes
+
+    Returns:
+        Structured JSON with updated event metadata or an error message.
+    """
+    return calendar.update_calendar_event(
+        identifier,
+        title,
+        start_datetime,
+        duration_minutes,
+        calendar_name,
+        location,
+        notes_text,
+    )
+
+
+@mcp.tool()
+async def delete_calendar_event(
+    identifier: str,
+    start_date: str = Field(default=""),
+    end_date: str = Field(default=""),
+    calendar_name: str = Field(default=""),
+    dry_run: bool = Field(default=True),
+) -> str:
+    """
+    Delete an exact or uniquely matching Calendar event. Defaults to dry-run.
+
+    Args:
+        identifier: Event id or title text
+        start_date: Optional date-range start in "YYYY-MM-DD" format
+        end_date: Optional date-range end in "YYYY-MM-DD" format
+        calendar_name: Optional calendar name
+        dry_run: Return matching event without deleting when true
+
+    Returns:
+        Structured JSON with deletion details or an error message.
+    """
+    return calendar.delete_calendar_event(
+        identifier,
+        start_date,
+        end_date,
+        calendar_name,
+        dry_run,
+    )
+
+
+@mcp.tool()
+async def check_calendar_availability(
+    start_datetime: str,
+    duration_minutes: int,
+    calendar_name: str = Field(default=""),
+) -> str:
+    """
+    Check whether a Calendar time slot conflicts with existing events.
+
+    Args:
+        start_datetime: Slot start in "YYYY-MM-DD HH:MM" format
+        duration_minutes: Slot duration in minutes
+        calendar_name: Optional calendar name
+
+    Returns:
+        Structured JSON with availability and conflicts or an error message.
+    """
+    return calendar.check_calendar_availability(
+        start_datetime,
+        duration_minutes,
+        calendar_name,
+    )
+
+
+@mcp.tool()
+async def create_recurring_event(
+    title: str,
+    start_datetime: str,
+    duration_minutes: int = Field(ge=1),
+    frequency: str = Field(default="weekly"),
+    interval: int = Field(default=1, ge=1),
+    count: int | None = Field(default=None, ge=1),
+    until_date: str = Field(default=""),
+    calendar_name: str = Field(default=""),
+    location: str = Field(default=""),
+    notes_text: str = Field(default=""),
+) -> str:
+    """
+    Create a recurring Calendar event.
+
+    Args:
+        title: Event title
+        start_datetime: Start date and time in "YYYY-MM-DD HH:MM" format
+        duration_minutes: Duration in minutes
+        frequency: daily, weekly, monthly, or yearly
+        interval: Recurrence interval
+        count: Optional occurrence count
+        until_date: Optional recurrence end date in "YYYY-MM-DD" format
+        calendar_name: Optional target calendar name
+        location: Optional event location
+        notes_text: Optional event notes
+
+    Returns:
+        Structured JSON with the created recurring event or an error message.
+    """
+    return calendar.create_recurring_event(
+        title,
+        start_datetime,
+        duration_minutes,
+        frequency,
+        interval,
+        count,
+        until_date,
+        calendar_name,
+        location,
+        notes_text,
+    )
 
 
 @mcp.tool()

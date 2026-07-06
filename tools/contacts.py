@@ -1,7 +1,9 @@
 import subprocess
+import json
 from .constants import SCRIPTS_PREFIX
 from rapidfuzz import fuzz, process
 from collections import OrderedDict
+from . import result
 
 _contact_cache = OrderedDict()
 _CACHE_MAX_SIZE = 100
@@ -122,3 +124,97 @@ def search_contacts(name: str) -> str:
     except Exception as e:
         error_msg = f"Failed to retrieve contacts: {str(e)}"
         return error_msg
+
+
+def _run_manager(action: str, *args: str, timeout: int = 60) -> str:
+    script_path = SCRIPTS_PREFIX / "contacts-manager.applescript"
+    tool_action = f"contacts.{action}"
+
+    try:
+        completed = subprocess.run(
+            ["osascript", script_path, action, *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if completed.returncode != 0:
+            error_msg = completed.stderr.strip() or "Unknown error"
+            return result.error(
+                tool_action,
+                error_msg,
+                permission_required="Contacts",
+            )
+
+        stdout = completed.stdout.strip()
+        data = {} if not stdout else json.loads(stdout)
+        return result.ok(tool_action, data)
+    except subprocess.TimeoutExpired:
+        return result.error(tool_action, "Operation timed out", code="timeout")
+    except Exception as exc:
+        return result.error(tool_action, str(exc))
+
+
+def _has_contact_name(first_name: str = "", last_name: str = "") -> bool:
+    return bool(first_name.strip() or last_name.strip())
+
+
+def get_contact(identifier: str) -> str:
+    if not identifier or not identifier.strip():
+        return result.error(
+            "contacts.get",
+            "identifier cannot be empty",
+            code="validation_error",
+        )
+    return _run_manager("get", identifier.strip())
+
+
+def create_contact(
+    first_name: str,
+    last_name: str,
+    organization: str = "",
+    phone: str = "",
+    email: str = "",
+    note: str = "",
+) -> str:
+    if not _has_contact_name(first_name, last_name):
+        return result.error(
+            "contacts.create",
+            "first_name or last_name is required",
+            code="validation_error",
+        )
+    return _run_manager(
+        "create",
+        first_name.strip(),
+        last_name.strip(),
+        organization.strip(),
+        phone.strip(),
+        email.strip(),
+        note,
+    )
+
+
+def update_contact(
+    identifier: str,
+    first_name: str = "",
+    last_name: str = "",
+    organization: str = "",
+    phone: str = "",
+    email: str = "",
+    note: str = "",
+) -> str:
+    if not identifier or not identifier.strip():
+        return result.error(
+            "contacts.update",
+            "identifier cannot be empty",
+            code="validation_error",
+        )
+    return _run_manager(
+        "update",
+        identifier.strip(),
+        first_name.strip(),
+        last_name.strip(),
+        organization.strip(),
+        phone.strip(),
+        email.strip(),
+        note,
+    )
