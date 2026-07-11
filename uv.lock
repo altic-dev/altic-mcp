@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 [[package]]
 name = "altic-mcp"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
     { name = "rapidfuzz" },

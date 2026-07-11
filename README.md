@@ -23,26 +23,6 @@ This repo currently includes one shareable skill:
   - Covers Messages, Contacts, Notes, Reminders, Calendar, Safari, window management, system controls, screenshots, and Chrome CDP browser control
   - Main skill manifest: `skills/altic-studio/SKILL.md`
 
-### Key Scripts In `altic-studio`
-
-- Messaging: `send-message.applescript`, `read-recent-messages.applescript`, `messages-manager.applescript`
-- Contacts: `fetch-all-contacts.applescript`, `contacts-manager.applescript`
-- Notes/Reminders: `create-note.applescript`, `search-for-note.applescript`, `set-reminder.applescript`, `notes-manager.applescript`, `reminders-manager.applescript`
-- Calendar: `create-calendar-event.applescript`, `list-all-calendar-events-for-day.applescript`, `calendar-manager.applescript`
-- Safari: open/close/switch/navigate/reload/history/page-info scripts
-- System: `open-application.applescript`, brightness + volume scripts
-- Screenshot: `capture-screenshot.applescript`
-- Files/Finder MCP: `find_files`, `list_directory`, `get_file_info`, `copy_file`, `copy_directory`, `move_file`, `rename_file`, `trash_file`, `reveal_in_finder`, `get_finder_selection`
-- Clipboard MCP: `get_clipboard_text`, `set_clipboard_text`, `clear_clipboard`, `get_clipboard_files`, `set_clipboard_files`, `save_clipboard_image`, `set_clipboard_image`
-- Window/Workspace MCP: `get_frontmost_app`, `list_windows`, `focus_window`, `move_window`, `resize_window`, `center_window`, `tile_windows`, `minimize`, `hide_app`, `quit_app`
-- Messages MCP: `list_chats`, `send_file_message`
-- Contacts MCP: `get_contact`, `create_contact`, `update_contact`
-- Reminders MCP: `list_reminder_lists`, `list_reminders`, `search_reminders`, `complete_reminder`, `delete_reminder`, `reschedule_reminder`, `update_reminder`, `show_reminder`
-- Calendar MCP: `list_calendars`, `list_calendar_events`, `search_calendar_events`, `update_calendar_event`, `delete_calendar_event`, `check_calendar_availability`, `create_recurring_event`
-- Notes MCP: `list_note_folders`, `list_notes`, `get_note`, `append_to_note`, `update_note`, `delete_note`, `move_note`
-- Clipboard script: `clipboard.swift`
-- Window script: `window-manager.swift`
-
 ## Skill Setup (Any Agent)
 
 Install `altic-studio` directly from this repo with the Skills CLI:
@@ -58,57 +38,242 @@ npx skills add altic-dev/altic-mcp
 
 Restart your coding agent after installation.
 
-### Manual Symlink Setup For OpenCode (Alternative)
-
-To make `altic-studio` available in OpenCode, symlink it into your OpenCode skills directory:
-
-```bash
-mkdir -p "$HOME/.config/opencode/skills"
-ln -sfn "/Users/rohith/Documents/altic-mcp/skills/altic-studio" "$HOME/.config/opencode/skills/altic-studio"
-ls "$HOME/.config/opencode/skills"
-```
-
 ## Requirements
 
 - macOS 10.13+
-- Python 3.13+
-- [UV package manager](https://docs.astral.sh/uv/getting-started/installation/)
+- [UV package manager](https://docs.astral.sh/uv/getting-started/installation/) (auto-installed by the bash installer if missing)
 
-## Quick Start
+> **Python note:** altic-mcp requires Python 3.13+ internally, but `uvx` manages this automatically — you do **not** need to install Python yourself when using the uvx or bash installer options below.
+
+## How to Install
+
+### Install in Claude Desktop
+
+altic-mcp offers multiple installation methods for Claude Desktop.
+
+> **📋 Update & Uninstall Information:** Options 1 and 2 have automatic updates. See [Updating & Uninstalling](#updating--uninstalling-altic-mcp) below for details.
+
+**Option 1: Add to `claude_desktop_config` manually ⭐ Auto-Updates (Requires UV)**
+
+Add this entry to your Claude Desktop config file (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "altic-mcp": {
+      "command": "uvx",
+      "args": ["--refresh", "--from", "git+https://github.com/altic-dev/altic-mcp.git", "altic-mcp"]
+    }
+  }
+}
+```
+
+Restart Claude if running.
+
+**✅ Auto-Updates:** Yes — `uvx --refresh` re-fetches the latest version from GitHub each time Claude starts
+**🔄 Manual Update:** `uv cache clean altic-mcp` then restart Claude
+**🗑️ Uninstall:** Remove the `"altic-mcp"` entry from your `claude_desktop_config.json`
+
+> **Performance tip:** `--refresh` ensures you always run the latest version but adds a few seconds to startup. Remove `--refresh` for faster startup (update manually with `uv cache clean altic-mcp`).
+
+**Option 2: Using bash script installer ⭐ Auto-Updates (Installs UV if needed)**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/altic-dev/altic-mcp/refs/heads/main/install.sh | bash
+```
+
+This script checks for UV (installs it if missing), backs up your existing Claude config, and adds the `altic-mcp` server entry automatically.
+
+**✅ Auto-Updates:** Yes — same `uvx --refresh` mechanism as Option 1
+**🔄 Manual Update:** Re-run the bash installer command above, or `uv cache clean altic-mcp`
+**🗑️ Uninstall:** Remove the `"altic-mcp"` entry from your `claude_desktop_config.json`
+
+### Install in Other Clients
+
+altic-mcp works with any MCP-compatible client. The standard JSON configuration is:
+
+```json
+{
+  "mcpServers": {
+    "altic-mcp": {
+      "command": "uvx",
+      "args": ["--refresh", "--from", "git+https://github.com/altic-dev/altic-mcp.git", "altic-mcp"]
+    }
+  }
+}
+```
+
+Add this to your client's MCP configuration file at the locations below:
+
+**Cursor**
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en-US/install-mcp?name=altic-mcp&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLXJlZnJlc2giLCItLWZyb20iLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL2FsdGljLWRldi9hbHRpYy1tY3AuZ2l0IiwiYWx0aWMtbWNwIl19)
+
+Or add manually to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in your project folder (project-specific).
+
+See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) for more info.
+
+**Windsurf**
+
+Add to `~/.codeium/windsurf/mcp_config.json`. See [Windsurf MCP docs](https://docs.windsurf.com/windsurf/cascade/mcp) for more info.
+
+**VS Code / GitHub Copilot**
+
+Add to `.vscode/mcp.json` in your project or VS Code User Settings (JSON). Make sure MCP is enabled under Chat > MCP. Works in Agent mode.
+
+See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+
+**Cline**
+
+Configure through the Cline extension settings in VS Code. Open the Cline sidebar, click the MCP Servers icon, and add the JSON configuration above. See [Cline MCP docs](https://docs.cline.bot/mcp/configuring-mcp-servers) for more info.
+
+**Roo Code**
+
+Add to your Roo Code MCP configuration file. See [Roo Code MCP docs](https://docs.roocode.com/features/mcp/using-mcp-in-roo) for more info.
+
+**Claude Code**
+
+```bash
+claude mcp add --scope user altic-mcp -- uvx --refresh --from git+https://github.com/altic-dev/altic-mcp.git altic-mcp
+```
+
+Remove `--scope user` to install for the current project only. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/claude-code/mcp) for more info.
+
+**Trae**
+
+Use the "Add manually" feature and paste the JSON configuration above. See [Trae MCP docs](https://docs.trae.ai/ide/model-context-protocol?_lang=en) for more info.
+
+**Kiro**
+
+Navigate to `Kiro` > `MCP Servers`, click `+ Add`, and paste the JSON configuration above. See [Kiro MCP docs](https://kiro.dev/docs/mcp/configuration/) for more info.
+
+**Codex (OpenAI)**
+
+Codex uses TOML configuration. Run this command to add altic-mcp:
+
+```bash
+codex mcp add altic-mcp -- uvx --refresh --from git+https://github.com/altic-dev/altic-mcp.git altic-mcp
+```
+
+Or manually add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.altic-mcp]
+command = "uvx"
+args = ["--refresh", "--from", "git+https://github.com/altic-dev/altic-mcp.git", "altic-mcp"]
+```
+
+See [Codex MCP docs](https://developers.openai.com/codex/mcp/) for more info.
+
+**JetBrains (AI Assistant)**
+
+In JetBrains IDEs, go to **Settings → Tools → AI Assistant → Model Context Protocol (MCP)**, click `+` Add, select **As JSON**, and paste the JSON configuration above. See [JetBrains MCP docs](https://www.jetbrains.com/help/ai-assistant/configure-an-mcp-server.html) for more info.
+
+**Gemini CLI**
+
+Add to `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "altic-mcp": {
+      "command": "uvx",
+      "args": ["--refresh", "--from", "git+https://github.com/altic-dev/altic-mcp.git", "altic-mcp"]
+    }
+  }
+}
+```
+
+See [Gemini CLI docs](https://github.com/google-gemini/gemini-cli) for more info.
+
+**OpenCode**
+
+Add to your `opencode.json` (project-level) or `~/.config/opencode/opencode.json` (global):
+
+```json
+{
+  "mcp": {
+    "altic-mcp": {
+      "type": "local",
+      "command": ["uvx", "--refresh", "--from", "git+https://github.com/altic-dev/altic-mcp.git", "altic-mcp"],
+      "enabled": true
+    }
+  }
+}
+```
+
+See [OpenCode MCP docs](https://opencode.ai/docs/mcp-servers) for more info.
+
+## Updating & Uninstalling Altic MCP
+
+### Automatic Updates (Options 1 & 2)
+
+Both the manual config (Option 1) and bash installer (Option 2) use `uvx --refresh`, which automatically re-fetches the latest version from GitHub whenever you restart Claude. No manual intervention needed.
+
+### Manual Updates
+
+If you removed `--refresh` for faster startup, force an update with:
+
+```bash
+uv cache clean altic-mcp
+```
+
+Then restart Claude Desktop.
+
+### Uninstalling Altic MCP
+
+#### Manual Uninstallation
+
+1. **Locate your Claude Desktop config file:**
+   - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+2. **Edit the config file:**
+   - Open the file in a text editor
+   - Find and remove the `"altic-mcp"` entry from the `"mcpServers"` section
+   - Save the file
+
+**Example — remove this section:**
+
+```json
+"altic-mcp": {
+  "command": "uvx",
+  "args": ["--refresh", "--from", "git+https://github.com/altic-dev/altic-mcp.git", "altic-mcp"]
+}
+```
+
+Close and restart Claude Desktop to complete the removal.
+
+#### Troubleshooting
+
+**If Claude won't start after editing the config:**
+- Check that your JSON is valid (no trailing commas, matched braces)
+- Restore from the backup created by the bash installer (`.bak.*` file next to your config)
+- Re-run the bash installer to regenerate a valid config
+
+## Local Development
+
+For contributors who want to run altic-mcp from a local checkout:
 
 ```bash
 # Install UV if needed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone and setup
-git clone https://github.com/altic-dev/altic-mcp.git 
+git clone https://github.com/altic-dev/altic-mcp.git
 cd altic-mcp
 uv sync
 
-# Test locally
+# Run the server directly
 uv run server.py
+
+# Or build and run via the installed entry point
+uv build
+uvx --from dist/altic_mcp-0.1.0-py3-none-any.whl altic-mcp
 ```
 
-## Setup with Claude Desktop
-
-**1. Edit `~/.config/claude/claude_desktop_config.json`:**
-
-```json
-{
-  "mcpServers": {
-    "altic-mcp": {
-      "command": "uv",
-      "args": ["run", "--project", "/FULL/PATH/TO/altic-mcp", "/FULL/PATH/TO/altic-mcp/server.py"]
-    }
-  }
-}
-```
-
-Replace `/FULL/PATH/TO/altic-mcp` with your actual path (e.g., `/Users/johndoe/Documents/altic-mcp`).
-
-**2. Restart Claude Desktop** (Command + Q, then reopen)
-
-**3. Look for the 🔨 hammer icon** in the chat interface to see available tools
+**❌ Auto-Updates:** No — requires manual `git pull` to update
+**🔄 Manual Update:** `cd altic-mcp && git pull && uv sync`
+**🗑️ Uninstall:** Remove the cloned directory and the MCP server entry from your client config
 
 ## Permissions Required
 
