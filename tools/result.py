@@ -1,18 +1,17 @@
 import json
 from typing import Any
 
+from .mcp_result import failure, success
+
 
 def ok(action: str, data: Any) -> str:
-    return json.dumps(
-        {
-            "ok": True,
-            "action": action,
-            "data": data,
-            "error": None,
-        },
-        indent=2,
-        sort_keys=True,
-    )
+    """Return compact JSON for legacy internal adapters.
+
+    The MCP boundary converts this value to native structured content.
+    """
+    payload = success(data)
+    payload["action"] = action
+    return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
 def error(
@@ -21,19 +20,15 @@ def error(
     code: str = "tool_error",
     permission_required: str | None = None,
 ) -> str:
-    payload = {
-        "message": message,
-        "code": code,
-    }
-    if permission_required:
-        payload["permission_required"] = permission_required
+    """Return compact JSON for legacy internal adapters."""
+    payload = failure(
+        message,
+        code=code,
+        permission_required=permission_required,
+    )
+    payload["action"] = action
     return json.dumps(
-        {
-            "ok": False,
-            "action": action,
-            "data": None,
-            "error": payload,
-        },
-        indent=2,
+        payload,
+        separators=(",", ":"),
         sort_keys=True,
     )

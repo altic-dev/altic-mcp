@@ -10,8 +10,8 @@ def test_ok_wraps_action_and_data():
         "ok": True,
         "action": "notes.get",
         "data": {"title": "Plan"},
-        "error": None,
     }
+    assert "\n" not in result.ok("notes.get", {"title": "Plan"})
 
 
 def test_error_wraps_action_and_message_with_metadata():
@@ -27,7 +27,6 @@ def test_error_wraps_action_and_message_with_metadata():
     assert payload == {
         "ok": False,
         "action": "calendar.delete",
-        "data": None,
         "error": {
             "message": "multiple matching events",
             "code": "ambiguous_match",

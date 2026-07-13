@@ -1,7 +1,10 @@
 import time
 
 from fastmcp import FastMCP
+from fastmcp.server.context import Context
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
+from fastmcp.tools.tool import ToolResult
+from mcp.types import CallToolResult, TextContent
 from pydantic import Field
 
 from tools import (
@@ -22,8 +25,26 @@ from tools import (
     system,
     window,
 )
+from tools.mcp_result import structured_only
 
-mcp = FastMCP("Altic-MCP")
+
+class StructuredFastMCP(FastMCP):
+    """FastMCP variant that preserves structured error payloads and ``isError``."""
+
+    async def _call_tool_mcp(
+        self, key: str, arguments: dict
+    ) -> CallToolResult:
+        async with Context(fastmcp=self):
+            result = await self._call_tool_middleware(key, arguments)
+            payload = result.structured_content
+            return CallToolResult(
+                content=result.content,
+                structuredContent=payload,
+                isError=bool(payload and payload.get("ok") is False),
+            )
+
+
+mcp = StructuredFastMCP("Altic-MCP")
 
 
 @mcp.tool()
@@ -1821,6 +1842,34 @@ def find_and_summarize_notes() -> str:
     )
 
 
+class StructuredResultMiddleware(Middleware):
+    """Expose ordinary tool data only through ``structuredContent``."""
+
+    async def on_call_tool(
+        self,
+        context: MiddlewareContext,
+        call_next: CallNext,
+    ) -> ToolResult:
+        tool_result = await call_next(context)
+
+        # Images, audio, resources, and other rich blocks must remain in content.
+        if any(not isinstance(block, TextContent) for block in tool_result.content):
+            return tool_result
+
+        if tool_result.structured_content is not None:
+            value = tool_result.structured_content
+            # FastMCP wraps scalar/string output schemas in {"result": ...}.
+            if set(value) == {"result"}:
+                value = value["result"]
+            return structured_only(value)
+
+        if len(tool_result.content) == 1:
+            return structured_only(tool_result.content[0].text)
+        if not tool_result.content:
+            return structured_only({})
+        return structured_only([block.text for block in tool_result.content])
+
+
 class AuditMiddleware(Middleware):
     """Log every tool call to the audit log with timing and success status."""
 
@@ -1835,7 +1884,7 @@ class AuditMiddleware(Middleware):
         try:
             result = await call_next(context)
             duration_ms = (time.monotonic() - start) * 1000
-            ok = not getattr(result, "isError", False)
+            ok = (result.structured_content or {}).get("ok", True)
             audit.log_tool_call(tool_name, arguments, ok, duration_ms)
             return result
         except Exception:
@@ -1845,6 +1894,7 @@ class AuditMiddleware(Middleware):
 
 
 mcp.add_middleware(AuditMiddleware())
+mcp.add_middleware(StructuredResultMiddleware())
 
 
 def main():

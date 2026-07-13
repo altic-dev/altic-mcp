@@ -8,28 +8,26 @@ on run argv
 	end if
 	
 	try
-		tell application "System Events"
-			-- Get current brightness (0.0 to 1.0)
-			set currentBrightness to do shell script "brightness -l | grep 'brightness' | head -n 1 | awk '{print $2}'"
-			set currentBrightness to currentBrightness as real
-			
-			-- Calculate new brightness
-			set newBrightness to currentBrightness - decrementValue
-			if newBrightness < 0 then
-				set newBrightness to 0
-			end if
-			
-			-- Set new brightness
-			do shell script "brightness " & newBrightness
-			
-			return "Brightness decreased from " & (round (currentBrightness * 100)) & "% to " & (round (newBrightness * 100)) & "%"
-		end tell
+		-- Use absolute path since `do shell script` uses a minimal PATH
+		-- that does not include Homebrew's /opt/homebrew/bin
+		set brightnessBin to "/opt/homebrew/bin/brightness"
+		
+		-- Get current brightness (0.0 to 1.0)
+		set currentBrightness to do shell script brightnessBin & " -l | grep 'brightness' | head -n 1 | awk '{print $2}'"
+		set currentBrightness to currentBrightness as real
+		
+		-- Calculate new brightness
+		set newBrightness to currentBrightness - decrementValue
+		if newBrightness < 0 then
+			set newBrightness to 0
+		end if
+		
+		-- Set new brightness
+		do shell script brightnessBin & " " & newBrightness
+		
+		return "Brightness decreased from " & (round (currentBrightness * 100)) & "% to " & (round (newBrightness * 100)) & "%"
 	on error errMsg
-		-- Fallback: Use keyboard shortcut to decrease brightness
-		tell application "System Events"
-			key code 107 -- F1 key (decrease brightness)
-		end tell
-		return "Brightness decreased (using keyboard shortcut)"
+		return "Error: Unable to decrease brightness: " & errMsg
 	end try
 end run
 
