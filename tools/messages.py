@@ -1,9 +1,7 @@
-import json
 import subprocess
-from pathlib import Path
 
+from . import applescript, result, security
 from .constants import SCRIPTS_PREFIX
-from . import result
 
 
 def send_message(phone_number: str, message: str) -> str:
@@ -54,32 +52,15 @@ def read_recent_messages(phone_number: str, recent_message_count: int = 50) -> s
         return f"Error: Failed to retrieve recent {recent_message_count} messages from number: {phone_number}, {str(e)}"
 
 
-def _run_manager(action: str, *args: str, timeout: int = 60) -> str:
-    script_path = SCRIPTS_PREFIX / "messages-manager.applescript"
-    tool_action = f"messages.{action}"
-
-    try:
-        completed = subprocess.run(
-            ["osascript", script_path, action, *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if completed.returncode != 0:
-            error_msg = completed.stderr.strip() or "Unknown error"
-            return result.error(
-                tool_action,
-                error_msg,
-                permission_required="Automation access for Messages",
-            )
-
-        stdout = completed.stdout.strip()
-        data = {} if not stdout else json.loads(stdout)
-        return result.ok(tool_action, data)
-    except subprocess.TimeoutExpired:
-        return result.error(tool_action, "Operation timed out", code="timeout")
-    except Exception as exc:
-        return result.error(tool_action, str(exc))
+def _run_manager(action: str, *args: str, timeout: int | None = None) -> str:
+    return applescript.run_manager(
+        "messages-manager.applescript",
+        "messages",
+        action,
+        *args,
+        timeout=timeout,
+        permission_required="Automation access for Messages",
+    )
 
 
 def list_chats(limit: int = 50) -> str:
@@ -106,7 +87,10 @@ def send_file_message(
             code="validation_error",
         )
 
-    target = Path(path).expanduser().resolve(strict=False)
+    try:
+        target = security.validate_path(path)
+    except (ValueError, PermissionError) as exc:
+        return result.error("messages.send_file", str(exc), code="validation_error")
     if not target.exists():
         return result.error(
             "messages.send_file",

@@ -12,6 +12,8 @@ from urllib.request import Request, urlopen
 
 import websocket
 
+from . import security
+
 
 @dataclass
 class ChromeSession:
@@ -334,7 +336,7 @@ def chrome_screenshot(session_id: str, output_path: str = "") -> str:
             shots_dir.mkdir(parents=True, exist_ok=True)
             target_path = str(shots_dir / f"{session_id}-{timestamp}.png")
 
-        target = Path(target_path).expanduser().resolve()
+        target = security.validate_path(target_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(base64.b64decode(encoded))
 

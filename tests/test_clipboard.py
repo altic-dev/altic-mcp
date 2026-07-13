@@ -32,6 +32,22 @@ def test_get_clipboard_text_truncates_and_reports_metadata(monkeypatch):
     }
 
 
+def test_get_clipboard_text_uses_configured_default(monkeypatch):
+    monkeypatch.setattr(clipboard.config, "get", lambda key: 4)
+    monkeypatch.setattr(
+        clipboard.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args=args[0], returncode=0, stdout="clipboard", stderr=""
+        ),
+    )
+
+    payload = read_json(clipboard.get_clipboard_text())
+
+    assert payload["text"] == "clip"
+    assert payload["truncated"] is True
+
+
 def test_set_clipboard_text_writes_to_pbcopy(monkeypatch):
     seen = {}
 

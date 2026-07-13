@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastmcp.utilities.types import Image
 
+from . import config, security
 from .constants import SCRIPTS_PREFIX
 
 
@@ -46,17 +47,19 @@ def _run_swift_json(action: str, *args: str) -> str:
 def _resolve_existing_path(path: str, label: str = "path") -> Path:
     if not path or not path.strip():
         raise ValueError(f"{label} cannot be empty")
-    resolved = Path(path).expanduser().resolve(strict=False)
+    resolved = security.validate_path(path)
     if not resolved.exists():
         raise FileNotFoundError(f"{label} does not exist: {resolved}")
     return resolved
 
 
-def get_clipboard_text(max_chars: int = 20000) -> str:
+def get_clipboard_text(max_chars: int | None = None) -> str:
     """
     Read plain text from the macOS clipboard.
     """
     try:
+        if max_chars is None:
+            max_chars = config.get("clipboard_max_chars")
         max_chars = max(1, min(max_chars, 200000))
         result = subprocess.run(
             ["pbpaste"],
@@ -151,7 +154,7 @@ def save_clipboard_image(output_path: str = "") -> str | list[object]:
             clipboard_dir.mkdir(parents=True, exist_ok=True)
             target_path = str(clipboard_dir / f"clipboard-image-{timestamp}.png")
 
-        target = Path(target_path).expanduser().resolve(strict=False)
+        target = security.validate_path(target_path)
         target.parent.mkdir(parents=True, exist_ok=True)
 
         result = _run_swift("save-image", str(target))

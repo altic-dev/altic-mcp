@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastmcp.utilities.types import Image
 
+from . import security
 from .constants import SCRIPTS_PREFIX
 
 
@@ -19,7 +20,7 @@ def capture_active_screen(output_path: str = "") -> str | list[object]:
             shots_dir.mkdir(parents=True, exist_ok=True)
             target_path = str(shots_dir / f"active-screen-{timestamp}.png")
 
-        target = Path(target_path).expanduser().resolve()
+        target = security.validate_path(target_path)
         target.parent.mkdir(parents=True, exist_ok=True)
 
         result = subprocess.run(

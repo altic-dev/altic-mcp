@@ -1,10 +1,9 @@
-import json
 import subprocess
 from datetime import datetime
 from typing import Tuple
-from .constants import SCRIPTS_PREFIX
-from . import result
 
+from . import applescript, result
+from .constants import SCRIPTS_PREFIX
 
 VALID_RECURRENCE_FREQUENCIES = {"daily", "weekly", "monthly", "yearly"}
 
@@ -103,32 +102,15 @@ def _parse_date(date: str) -> datetime:
     return datetime.strptime(date, "%Y-%m-%d")
 
 
-def _run_manager(action: str, *args: str, timeout: int = 60) -> str:
-    script_path = SCRIPTS_PREFIX / "calendar-manager.applescript"
-    tool_action = f"calendar.{action}"
-
-    try:
-        completed = subprocess.run(
-            ["osascript", script_path, action, *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if completed.returncode != 0:
-            error_msg = completed.stderr.strip() or "Unknown error"
-            return result.error(
-                tool_action,
-                error_msg,
-                permission_required="Calendars",
-            )
-
-        stdout = completed.stdout.strip()
-        data = {} if not stdout else json.loads(stdout)
-        return result.ok(tool_action, data)
-    except subprocess.TimeoutExpired:
-        return result.error(tool_action, "Operation timed out", code="timeout")
-    except Exception as exc:
-        return result.error(tool_action, str(exc))
+def _run_manager(action: str, *args: str, timeout: int | None = None) -> str:
+    return applescript.run_manager(
+        "calendar-manager.applescript",
+        "calendar",
+        action,
+        *args,
+        timeout=timeout,
+        permission_required="Calendars",
+    )
 
 
 def _validate_date_range(action: str, start_date: str, end_date: str) -> str | None:

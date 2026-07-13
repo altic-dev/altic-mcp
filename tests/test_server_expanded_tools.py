@@ -32,3 +32,37 @@ def test_server_exposes_expanded_calendar_reminders_and_notes_tools():
         "update_reminder",
         "show_reminder",
     }.issubset(tool_names)
+
+
+def test_server_exposes_config_audit_and_search_tools():
+    import server
+
+    tool_names = set(server.mcp._tool_manager._tools)
+
+    assert {
+        "get_config",
+        "set_config_value",
+        "get_recent_tool_calls",
+        "start_search",
+        "get_more_search_results",
+        "stop_search",
+        "list_searches",
+    }.issubset(tool_names)
+
+
+def test_server_exposes_resources_and_prompts():
+    import asyncio
+
+    import server
+
+    resources = asyncio.run(server.mcp.get_resources())
+    resource_uris = set(resources.keys())
+    assert "altic://apps/frontmost" in resource_uris
+    assert "altic://finder/selection" in resource_uris
+    assert "altic://clipboard/text" in resource_uris
+
+    prompts = asyncio.run(server.mcp.get_prompts())
+    prompt_names = set(prompts.keys())
+    assert "summarize_today_calendar" in prompt_names
+    assert "draft_imessage_reply" in prompt_names
+    assert "find_and_summarize_notes" in prompt_names

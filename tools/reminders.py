@@ -1,8 +1,8 @@
-import json
 import subprocess
 from datetime import datetime
+
+from . import applescript, result
 from .constants import SCRIPTS_PREFIX
-from . import result
 
 
 def validate_time_format(time: str) -> tuple[bool, str]:
@@ -47,32 +47,15 @@ def _bool_arg(value: bool) -> str:
     return "true" if value else "false"
 
 
-def _run_manager(action: str, *args: str, timeout: int = 60) -> str:
-    script_path = SCRIPTS_PREFIX / "reminders-manager.applescript"
-    tool_action = f"reminders.{action}"
-
-    try:
-        completed = subprocess.run(
-            ["osascript", script_path, action, *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if completed.returncode != 0:
-            error_msg = completed.stderr.strip() or "Unknown error"
-            return result.error(
-                tool_action,
-                error_msg,
-                permission_required="Reminders",
-            )
-
-        stdout = completed.stdout.strip()
-        data = {} if not stdout else json.loads(stdout)
-        return result.ok(tool_action, data)
-    except subprocess.TimeoutExpired:
-        return result.error(tool_action, "Operation timed out", code="timeout")
-    except Exception as exc:
-        return result.error(tool_action, str(exc))
+def _run_manager(action: str, *args: str, timeout: int | None = None) -> str:
+    return applescript.run_manager(
+        "reminders-manager.applescript",
+        "reminders",
+        action,
+        *args,
+        timeout=timeout,
+        permission_required="Reminders",
+    )
 
 
 def _validate_identifier(action: str, identifier: str) -> str | None:

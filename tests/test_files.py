@@ -2,8 +2,6 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from tools import files
 
 
@@ -53,6 +51,18 @@ def test_find_files_name_backend_finds_matching_files(tmp_path):
     assert [Path(item["path"]).name for item in payload["results"]] == [
         "quarterly-report.md"
     ]
+
+
+def test_find_files_uses_configured_default_limit(tmp_path, monkeypatch):
+    (tmp_path / "report-a.txt").write_text("a")
+    (tmp_path / "report-b.txt").write_text("b")
+    values = {"file_search_max_results": 1, "allowed_directories": []}
+    monkeypatch.setattr(files.config, "get", values.__getitem__)
+
+    payload = read_json(files.find_files("report", str(tmp_path), kind="name"))
+
+    assert len(payload["results"]) == 1
+    assert payload["truncated"] is True
 
 
 def test_find_files_spotlight_backend_is_mockable(tmp_path, monkeypatch):

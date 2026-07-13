@@ -4,7 +4,6 @@ from typing import Any
 
 from .constants import SCRIPTS_PREFIX
 
-
 VALID_TILE_LAYOUTS = {"columns", "rows", "grid"}
 
 

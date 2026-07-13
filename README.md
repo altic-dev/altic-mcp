@@ -2,17 +2,21 @@
 
 ## Features
 
-50+ tools for macOS automation:
+90+ tools for macOS automation:
 - 📱 **Messages & Contacts** - Send/read iMessages, list chats, send file attachments, search/get/create/update contacts
 - 📝 **Notes & Reminders** - Create, list, search, update, show, move, complete, and delete notes/reminders
 - 📅 **Calendar** - Create, list, search, update, delete, check availability, and create recurring events
-- 🗂️ **Files & Finder** - Find, inspect, copy, move, rename, reveal, and trash files safely
+- 🗂️ **Files & Finder** - Find, inspect, copy, move, rename, reveal, and trash files safely; streaming paginated search sessions
 - 📋 **Clipboard** - Read/write text, copy file paths for Finder paste, and save/set clipboard images
 - 🪟 **Window & Workspace** - List/focus apps and windows, move/resize/center/tile windows, minimize windows, hide apps, and quit apps
 - 🌐 **Safari** - Control tabs, navigate, execute JavaScript
 - 🌍 **Chrome (CDP)** - Open sessions, navigate, click/type, extract data, screenshots
 - 📸 **Screen Capture** - Capture the active display and share image output with the model
 - 🖥️ **System** - Open apps, adjust brightness/volume, visual effects
+- ⚙️ **Configuration** - Get/set runtime config (timeouts, limits, allowed directories) without restarting
+- 📊 **Audit & Observability** - Automatic tool-call logging with rotation and recent-call history
+- 🔒 **Path Security** - Optional allowed-directories allowlist with symlink traversal prevention
+- 📎 **Resources & Prompts** - MCP resources for frontmost app, Finder selection, clipboard; prompts for calendar summaries, iMessage replies, note search
 
 ## Available Skills
 
@@ -44,6 +48,42 @@ Restart your coding agent after installation.
 - [UV package manager](https://docs.astral.sh/uv/getting-started/installation/) (auto-installed by the bash installer if missing)
 
 > **Python note:** altic-mcp requires Python 3.13+ internally, but `uvx` manages this automatically — you do **not** need to install Python yourself when using the uvx or bash installer options below.
+
+## Security & Runtime Configuration
+
+### Allowed Directories (Path Allowlist)
+
+By default, altic-mcp has full filesystem access for file operations. To restrict file tools to specific directories, set the `ALLOWED_DIRECTORIES` environment variable (colon-separated) or use the `set_config_value` tool:
+
+```bash
+# Via environment variable
+export ALLOWED_DIRECTORIES="/Users/you/Documents:/Users/you/Desktop"
+```
+
+```json
+// Or via the set_config_value MCP tool
+{"key": "allowed_directories", "value": ["/Users/you/Documents", "/Users/you/Desktop"]}
+```
+
+All file paths are resolved with symlink traversal prevention — a symlink inside an allowed directory that points outside will be rejected.
+
+### Runtime Config
+
+altic-mcp stores runtime configuration at `~/.config/altic-mcp/config.json`. Use the `get_config` and `set_config_value` MCP tools to inspect and change settings without restarting:
+
+| Key | Default | Description |
+|---|---|---|
+| `osascript_timeout_seconds` | 60 | Timeout for AppleScript manager calls |
+| `file_search_max_results` | 25 | Max results for find_files |
+| `clipboard_max_chars` | 20000 | Max chars for clipboard text reads |
+| `include_hidden_default` | false | Include hidden files in searches by default |
+| `allowed_directories` | `[]` | Allowed path roots (empty = full FS) |
+| `audit_log_enabled` | false | Log tool calls to audit file when enabled |
+| `search_visit_limit` | 50000 | Max entries to walk per search batch |
+
+### Audit Logging
+
+When audit logging is enabled, every tool call is logged to `~/.cache/altic-mcp/audit.jsonl` (rotated at 10 MB). Use the `get_recent_tool_calls` tool to retrieve recent call history with timing and success status.
 
 ## How to Install
 
@@ -307,4 +347,3 @@ open -a "Google Chrome" --args --remote-debugging-port=9222
 ```
 
 macOS will prompt for permissions when first used. Grant them to enable full functionality.
-

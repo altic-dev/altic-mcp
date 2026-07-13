@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.altic-dev/altic-mcp",
+  "title": "Altic MCP",
+  "description": "MCP server for macOS automation — messages, contacts, notes, reminders, calendar, files, clipboard, windows, Safari, Chrome, screenshots, and system controls.",
+  "repository": {
+    "url": "https://github.com/altic-dev/altic-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "python",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "altic-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

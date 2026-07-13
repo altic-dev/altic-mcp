@@ -1,13 +1,16 @@
-from decimal import DefaultContext
+import time
 
 from fastmcp import FastMCP
+from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from pydantic import Field
 
 from tools import (
     app,
+    audit,
     calendar,
     chrome,
     clipboard,
+    config,
     contacts,
     display,
     files,
@@ -254,7 +257,7 @@ async def quit_app(app_name: str) -> str:
 async def find_files(
     query: str,
     root: str = Field(default=""),
-    max_results: int = Field(default=25, ge=1, le=500),
+    max_results: int | None = Field(default=None, ge=1, le=500),
     include_hidden: bool = Field(default=False),
     kind: str = Field(default="auto"),
 ) -> str:
@@ -438,7 +441,7 @@ async def get_finder_selection() -> str:
 
 @mcp.tool()
 async def get_clipboard_text(
-    max_chars: int = Field(default=20000, ge=1, le=200000),
+    max_chars: int | None = Field(default=None, ge=1, le=200000),
 ) -> str:
     """
     Read plain text from the macOS clipboard.
@@ -1650,6 +1653,198 @@ async def remove_screen_glow() -> str:
         Success or error message
     """
     return display.remove_screen_glow()
+
+
+@mcp.tool()
+async def get_config() -> str:
+    """
+    Return the current altic-mcp runtime configuration.
+
+    Returns:
+        Structured JSON with all config keys and their current values.
+    """
+    return config.get_config()
+
+
+@mcp.tool()
+async def set_config_value(key: str, value: str | int | float | bool | list[str]) -> str:
+    """
+    Set a single runtime config value and persist it to disk.
+
+    Changes take effect immediately without restarting the server. Valid keys:
+    file_search_max_results, osascript_timeout_seconds, clipboard_max_chars,
+    include_hidden_default, allowed_directories, audit_log_enabled,
+    search_visit_limit.
+
+    Args:
+        key: Config key name
+        value: New value (type must match the key)
+
+    Returns:
+        Structured JSON confirming the updated key/value.
+    """
+    return config.set_config_value(key, value)
+
+
+@mcp.tool()
+async def get_recent_tool_calls(
+    limit: int = Field(default=50, ge=1, le=500),
+) -> str:
+    """
+    Return recent tool calls from the audit log.
+
+    Args:
+        limit: Maximum number of recent calls to return
+
+    Returns:
+        Structured JSON with chronological tool call records.
+    """
+    return audit.get_recent_tool_calls(limit)
+
+
+@mcp.tool()
+async def start_search(
+    query: str,
+    root: str = Field(default=""),
+    max_results: int | None = Field(default=None, ge=1, le=500),
+    include_hidden: bool | None = Field(default=None),
+    kind: str = Field(default="auto"),
+) -> str:
+    """
+    Start a file search and return the first batch of results.
+
+    Spotlight results are returned in full (search_id is null). Filesystem
+    name searches return a search_id for pagination via get_more_search_results.
+
+    Args:
+        query: File name or Spotlight query text
+        root: Optional directory to search within
+        max_results: Maximum results in this batch
+        include_hidden: Include hidden files (defaults to config)
+        kind: Search backend: auto, name, or spotlight
+
+    Returns:
+        JSON with search_id, results, source, and exhausted/truncated flags.
+    """
+    return files.start_search(query, root, max_results, include_hidden, kind)
+
+
+@mcp.tool()
+async def get_more_search_results(
+    search_id: str,
+    count: int = Field(default=25, ge=1, le=500),
+) -> str:
+    """
+    Fetch the next batch of results for an active search session.
+
+    Args:
+        search_id: Search id returned by start_search
+        count: Maximum results to return in this batch
+
+    Returns:
+        JSON with the next results batch and exhaustion status.
+    """
+    return files.get_more_search_results(search_id, count)
+
+
+@mcp.tool()
+async def stop_search(search_id: str) -> str:
+    """
+    Stop and remove an active search session.
+
+    Args:
+        search_id: Search id returned by start_search
+
+    Returns:
+        JSON confirming whether the session was stopped.
+    """
+    return files.stop_search(search_id)
+
+
+@mcp.tool()
+async def list_searches() -> str:
+    """
+    List all active search sessions.
+
+    Returns:
+        JSON with active search ids, queries, and progress.
+    """
+    return files.list_searches()
+
+
+@mcp.resource("altic://apps/frontmost")
+async def frontmost_app_resource() -> str:
+    """Current frontmost macOS application metadata."""
+    return window.get_frontmost_app()
+
+
+@mcp.resource("altic://finder/selection")
+async def finder_selection_resource() -> str:
+    """Currently selected Finder items with metadata."""
+    return files.get_finder_selection()
+
+
+@mcp.resource("altic://clipboard/text")
+async def clipboard_text_resource() -> str:
+    """Current plain-text contents of the macOS clipboard."""
+    return clipboard.get_clipboard_text()
+
+
+@mcp.prompt()
+def summarize_today_calendar() -> str:
+    """Generate a prompt to summarize today's calendar events."""
+    return (
+        "Use the list_calendar_events tool with today's date range to retrieve "
+        "all calendar events for today, then provide a concise summary of the "
+        "schedule including event times, titles, and locations."
+    )
+
+
+@mcp.prompt()
+def draft_imessage_reply() -> str:
+    """Generate a prompt to draft a reply to the latest iMessage conversation."""
+    return (
+        "Use list_chats to find the most recent Messages conversation, then use "
+        "read_recent_messages to read the latest messages in that chat. Draft a "
+        "contextually appropriate reply and present it to the user for approval "
+        "before sending with send_imessage."
+    )
+
+
+@mcp.prompt()
+def find_and_summarize_notes() -> str:
+    """Generate a prompt to search and summarize Apple Notes."""
+    return (
+        "Ask the user what topic they want to search for, then use search_notes "
+        "to find matching notes. Retrieve the full content of the top results "
+        "with get_note and provide a summary of what was found."
+    )
+
+
+class AuditMiddleware(Middleware):
+    """Log every tool call to the audit log with timing and success status."""
+
+    async def on_call_tool(
+        self,
+        context: MiddlewareContext,
+        call_next: CallNext,
+    ):
+        start = time.monotonic()
+        tool_name = context.message.name
+        arguments = context.message.arguments
+        try:
+            result = await call_next(context)
+            duration_ms = (time.monotonic() - start) * 1000
+            ok = not getattr(result, "isError", False)
+            audit.log_tool_call(tool_name, arguments, ok, duration_ms)
+            return result
+        except Exception:
+            duration_ms = (time.monotonic() - start) * 1000
+            audit.log_tool_call(tool_name, arguments, False, duration_ms)
+            raise
+
+
+mcp.add_middleware(AuditMiddleware())
 
 
 def main():

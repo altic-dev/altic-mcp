@@ -1,9 +1,10 @@
 import subprocess
-import json
-from .constants import SCRIPTS_PREFIX
-from rapidfuzz import fuzz, process
 from collections import OrderedDict
-from . import result
+
+from rapidfuzz import fuzz, process
+
+from . import applescript, result
+from .constants import SCRIPTS_PREFIX
 
 _contact_cache = OrderedDict()
 _CACHE_MAX_SIZE = 100
@@ -126,32 +127,15 @@ def search_contacts(name: str) -> str:
         return error_msg
 
 
-def _run_manager(action: str, *args: str, timeout: int = 60) -> str:
-    script_path = SCRIPTS_PREFIX / "contacts-manager.applescript"
-    tool_action = f"contacts.{action}"
-
-    try:
-        completed = subprocess.run(
-            ["osascript", script_path, action, *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if completed.returncode != 0:
-            error_msg = completed.stderr.strip() or "Unknown error"
-            return result.error(
-                tool_action,
-                error_msg,
-                permission_required="Contacts",
-            )
-
-        stdout = completed.stdout.strip()
-        data = {} if not stdout else json.loads(stdout)
-        return result.ok(tool_action, data)
-    except subprocess.TimeoutExpired:
-        return result.error(tool_action, "Operation timed out", code="timeout")
-    except Exception as exc:
-        return result.error(tool_action, str(exc))
+def _run_manager(action: str, *args: str, timeout: int | None = None) -> str:
+    return applescript.run_manager(
+        "contacts-manager.applescript",
+        "contacts",
+        action,
+        *args,
+        timeout=timeout,
+        permission_required="Contacts",
+    )
 
 
 def _has_contact_name(first_name: str = "", last_name: str = "") -> bool:

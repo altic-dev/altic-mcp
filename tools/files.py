@@ -1,8 +1,12 @@
+import itertools
 import json
 import shutil
 import subprocess
 import time
 from pathlib import Path
+from typing import Any, Iterator
+
+from . import config, security
 
 
 def _json(payload: dict) -> str:
@@ -14,9 +18,8 @@ def _error(message: str) -> str:
 
 
 def _resolve(path: str) -> Path:
-    if not path or not path.strip():
-        raise ValueError("path cannot be empty")
-    return Path(path).expanduser().resolve(strict=False)
+    """Resolve and validate a path through the security allowlist."""
+    return security.validate_path(path)
 
 
 def _is_hidden(path: Path, root: Path | None = None) -> bool:
@@ -146,7 +149,10 @@ def _spotlight_search(
     for line in result.stdout.splitlines():
         if len(results) >= max_results:
             break
-        path = Path(line).expanduser().resolve(strict=False)
+        try:
+            path = security.validate_path(line)
+        except (ValueError, PermissionError):
+            continue
         if not path.exists():
             continue
         if not include_hidden and _is_hidden(path, root_path):
@@ -158,7 +164,7 @@ def _spotlight_search(
 def find_files(
     query: str,
     root: str = "",
-    max_results: int = 25,
+    max_results: int | None = None,
     include_hidden: bool = False,
     kind: str = "auto",
 ) -> str:
@@ -166,6 +172,8 @@ def find_files(
         return _error("query cannot be empty")
     if kind not in {"auto", "name", "spotlight"}:
         return _error("kind must be one of: auto, name, spotlight")
+    if max_results is None:
+        max_results = config.get("file_search_max_results")
     max_results = max(1, min(max_results, 500))
 
     try:
@@ -195,17 +203,24 @@ def find_files(
                 if kind == "spotlight":
                     return _error(f"spotlight search failed: {exc}")
 
-        fallback_root = root_path or Path.home().resolve(strict=False)
-        results = _name_search(
-            query=query,
-            root_path=fallback_root,
-            max_results=max_results,
-            include_hidden=include_hidden,
-        )
+        allowed_roots = security.get_allowed_directories()
+        fallback_roots = [root_path] if root_path else (allowed_roots or [Path.home().resolve()])
+        results = []
+        for fallback_root in fallback_roots:
+            results.extend(
+                _name_search(
+                    query=query,
+                    root_path=fallback_root,
+                    max_results=max_results - len(results),
+                    include_hidden=include_hidden,
+                )
+            )
+            if len(results) >= max_results:
+                break
         return _json(
             {
                 "query": query,
-                "root": str(fallback_root),
+                "root": str(root_path) if root_path else "",
                 "source": "name",
                 "results": results,
                 "truncated": len(results) >= max_results,
@@ -516,7 +531,10 @@ def get_finder_selection() -> str:
         for line in result.stdout.splitlines():
             if not line.strip():
                 continue
-            items.append(_metadata(Path(line.strip())))
+            try:
+                items.append(_metadata(security.validate_path(line.strip())))
+            except (ValueError, PermissionError):
+                continue
         return _json(
             {
                 "action": "get_finder_selection",
@@ -526,3 +544,194 @@ def get_finder_selection() -> str:
         )
     except Exception as exc:
         return _error(f"failed to get Finder selection: {exc}")
+
+
+_search_sessions: dict[str, dict[str, Any]] = {}
+_search_counter = itertools.count(1)
+
+
+def _new_search_id() -> str:
+    return f"search-{next(_search_counter)}"
+
+
+def _drain_name_session(search_id: str, count: int) -> list[dict]:
+    """Consume up to ``count`` matching entries from a name-search session."""
+    session = _search_sessions[search_id]
+    lowered = session["query"].casefold()
+    root: Path = session["root"]
+    include_hidden: bool = session["include_hidden"]
+    generator: Iterator[Path] = session["generator"]
+    visit_limit = config.get("search_visit_limit")
+
+    results: list[dict] = []
+    visited = 0
+
+    for path in generator:
+        visited += 1
+        if visited > visit_limit:
+            session["exhausted"] = False
+            return results
+        if not include_hidden and _is_hidden(path, root):
+            continue
+        if lowered in path.name.casefold():
+            results.append(_metadata(path, source="name"))
+            session["returned"] += 1
+            if len(results) >= count:
+                try:
+                    peeked = next(generator)
+                except StopIteration:
+                    session["exhausted"] = True
+                    del session["generator"]
+                    return results
+                session["generator"] = itertools.chain([peeked], generator)
+                session["exhausted"] = False
+                return results
+
+    session["exhausted"] = True
+    del session["generator"]
+    return results
+
+
+def start_search(
+    query: str,
+    root: str = "",
+    max_results: int | None = None,
+    include_hidden: bool | None = None,
+    kind: str = "auto",
+) -> str:
+    """Start a file search, returning the first batch plus a search_id.
+
+    Spotlight results are returned in full (search_id is null). Filesystem
+    name searches return a search_id that can be paged with
+    :func:`get_more_search_results`.
+    """
+    if not query or not query.strip():
+        return _error("query cannot be empty")
+    if kind not in {"auto", "name", "spotlight"}:
+        return _error("kind must be one of: auto, name, spotlight")
+    if max_results is None:
+        max_results = config.get("file_search_max_results")
+    max_results = max(1, min(max_results, 500))
+    if include_hidden is None:
+        include_hidden = bool(config.get("include_hidden_default"))
+
+    try:
+        root_path = _resolve(root) if root.strip() else None
+        if root_path and not root_path.is_dir():
+            return _error(f"root is not a directory: {root_path}")
+    except (ValueError, PermissionError) as exc:
+        return _error(str(exc))
+
+    if kind in {"auto", "spotlight"}:
+        try:
+            spotlight_results = _spotlight_search(
+                query=query,
+                root_path=root_path,
+                max_results=max_results,
+                include_hidden=include_hidden,
+            )
+            if kind == "spotlight" or spotlight_results:
+                return _json(
+                    {
+                        "search_id": None,
+                        "query": query,
+                        "root": str(root_path) if root_path else "",
+                        "source": "spotlight",
+                        "results": spotlight_results,
+                        "truncated": len(spotlight_results) >= max_results,
+                        "exhausted": True,
+                    }
+                )
+        except Exception as exc:
+            if kind == "spotlight":
+                return _error(f"spotlight search failed: {exc}")
+
+    allowed_roots = security.get_allowed_directories()
+    fallback_roots = [root_path] if root_path else (allowed_roots or [Path.home().resolve()])
+    fallback_root = fallback_roots[0]
+    session_id = _new_search_id()
+    _search_sessions[session_id] = {
+        "query": query,
+        "root": fallback_root,
+        "include_hidden": include_hidden,
+        "generator": itertools.chain.from_iterable(root.rglob("*") for root in fallback_roots),
+        "returned": 0,
+        "exhausted": False,
+    }
+
+    results = _drain_name_session(session_id, max_results)
+    session = _search_sessions[session_id]
+    return _json(
+        {
+            "search_id": session_id,
+            "query": query,
+            "root": str(fallback_root),
+            "source": "name",
+            "results": results,
+            "truncated": len(results) >= max_results,
+            "exhausted": session["exhausted"],
+            "returned_so_far": session["returned"],
+        }
+    )
+
+
+def get_more_search_results(search_id: str, count: int = 25) -> str:
+    """Return the next batch of results for an active search session."""
+    if not search_id or search_id not in _search_sessions:
+        return _error(f"unknown or expired search_id: {search_id}")
+
+    session = _search_sessions[search_id]
+    count = max(1, min(count, 500))
+
+    if session["exhausted"]:
+        return _json(
+            {
+                "search_id": search_id,
+                "results": [],
+                "exhausted": True,
+                "truncated": False,
+                "returned_so_far": session["returned"],
+            }
+        )
+
+    results = _drain_name_session(search_id, count)
+    session = _search_sessions[search_id]
+    return _json(
+        {
+            "search_id": search_id,
+            "results": results,
+            "exhausted": session["exhausted"],
+            "truncated": len(results) >= count,
+            "returned_so_far": session["returned"],
+        }
+    )
+
+
+def stop_search(search_id: str) -> str:
+    """Stop and remove an active search session."""
+    stopped = search_id in _search_sessions
+    if stopped:
+        del _search_sessions[search_id]
+    return _json(
+        {
+            "action": "stop_search",
+            "search_id": search_id,
+            "stopped": stopped,
+        }
+    )
+
+
+def list_searches() -> str:
+    """List all active search sessions."""
+    sessions = []
+    for sid, session in _search_sessions.items():
+        sessions.append(
+            {
+                "search_id": sid,
+                "query": session["query"],
+                "root": str(session["root"]),
+                "returned": session["returned"],
+                "exhausted": session["exhausted"],
+            }
+        )
+    return _json({"searches": sessions, "count": len(sessions)})

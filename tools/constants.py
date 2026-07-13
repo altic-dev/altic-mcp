@@ -1,3 +1,3 @@
-from pathlib import Path 
+from pathlib import Path
 
-SCRIPTS_PREFIX = Path(__file__).parent / "scripts" 
+SCRIPTS_PREFIX = Path(__file__).parent / "scripts"
